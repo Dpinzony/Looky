@@ -1,28 +1,185 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Simulador de Evolución Estelar — v3.0 Científico</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0; padding: 0;
-            background-color: #080810;
-            overflow: hidden;
-        }
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-            display: block;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulación de Ciclo de Vida Estelar</title>
+
+<!-- Fuentes -->
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<!-- Estilos -->
+<link rel="stylesheet" href="css/style.css">
+
+<!-- p5.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 </head>
 <body>
-    <div id="canvas-container"></div>
-    <script src="particula.js"></script>
-    <script src="sistemaEstelar.js"></script>
-    <script src="interfaz.js"></script>
-    <script src="sketch.js"></script>
+
+<!-- ── Header ──────────────────────────────── -->
+<div id="header">
+  <h1>⭐ Simulación de Ciclo de Vida Estelar</h1>
+  <p>Integración RK4 · Ecuaciones de Estructura · Relatividad General</p>
+</div>
+
+<!-- ── Layout principal ────────────────────── -->
+<div id="main">
+
+  <!-- Canvas p5.js -->
+  <div id="canvas-container"></div>
+
+  <!-- Sidebar de controles y datos -->
+  <div id="sidebar">
+
+    <!-- Indicador de fase -->
+    <div id="phaseIndicator" class="phase-indicator phase-protostar">Protoestrella</div>
+    <div id="ageDisplay">t = 0 yr</div>
+
+    <!-- Control de parámetros -->
+    <div class="panel">
+      <div class="panel-title">⚙ Control de Masa</div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>M<sub>ZAMS</sub></span>
+          <span class="slider-val"><span id="massVal">1.0</span> M☉</span>
+        </div>
+        <input type="range" id="massSlider" min="0.5" max="50" step="0.5" value="1.0">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label">
+          <span>Velocidad sim.</span>
+          <span class="slider-val" id="speedVal">×8</span>
+        </div>
+        <input type="range" id="speedSlider" min="1" max="40" step="1" value="8">
+      </div>
+
+      <div class="btn-row">
+        <button onclick="resetStar()">↺ Reset</button>
+        <button id="btnPause" onclick="togglePause()">⏸ Pausa</button>
+      </div>
+      <div class="btn-row">
+        <button onclick="skipPhase()" title="Saltar al final de la fase actual">⏭ Fase</button>
+        <button onclick="skipToCompact()" title="Ir directo al objeto compacto final">⚡ Final</button>
+      </div>
+    </div>
+
+    <!-- Parámetros estelares -->
+    <div class="panel">
+      <div class="panel-title">★ Parámetros Estelares</div>
+      <div class="param-row">
+        <span class="param-label">Radio</span>
+        <span class="param-value" id="pRadius">1.00 R☉</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Luminosidad</span>
+        <span class="param-value" id="pLum">1.00 L☉</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">T superficie</span>
+        <span class="param-value" id="pTemp">5778 K</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Masa actual</span>
+        <span class="param-value" id="pMass">1.00 M☉</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">Masa núcleo</span>
+        <span class="param-value" id="pCoreMass">0.00 M☉</span>
+      </div>
+      <div class="separator"></div>
+      <div class="param-row">
+        <span class="param-label">Destino final</span>
+        <span class="param-value highlight" id="pFate">Enana Blanca</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">τ<sub>MS</sub></span>
+        <span class="param-value" id="pTauMs">10.0 Gyr</span>
+      </div>
+    </div>
+
+    <!-- Combustible nuclear -->
+    <div class="panel">
+      <div class="panel-title">⚗ Combustible Nuclear</div>
+      <div style="font-size:0.56rem;color:#5a8aaa;margin-bottom:2px;">Hidrógeno H¹</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar bar-h" id="barH" style="width:100%"></div>
+      </div>
+      <div style="font-size:0.56rem;color:#5a8aaa;margin:4px 0 2px;">Helio He⁴</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar bar-he" id="barHe" style="width:0%"></div>
+      </div>
+      <div style="font-size:0.56rem;color:#5a8aaa;margin:4px 0 2px;">Carbono / Oxígeno</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar bar-c" id="barC" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Objeto compacto (oculto hasta fase final) -->
+    <div class="panel" id="compactPanel" style="display:none;">
+      <div class="panel-title" id="compactTitle">◉ Objeto Compacto</div>
+      <div class="param-row">
+        <span class="param-label" id="compactLabel1">Masa</span>
+        <span class="param-value" id="compactVal1">—</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label" id="compactLabel2">Radio</span>
+        <span class="param-value" id="compactVal2">—</span>
+      </div>
+      <div class="param-row">
+        <span class="param-label">EoS</span>
+        <span class="param-value highlight" id="compactVal3">—</span>
+      </div>
+    </div>
+
+    <!-- Ecuaciones activas -->
+    <div class="panel">
+      <div class="panel-title">∫ Ecuaciones Activas</div>
+      <div id="equationInfo" style="font-size:0.53rem;color:#4a8aaa;line-height:1.75;">
+        Contracción Kelvin-Helmholtz<br>
+        E<sub>grav</sub> = GM²/R → L
+      </div>
+    </div>
+
+    <!-- Leyenda H-R -->
+    <div class="panel">
+      <div class="panel-title">◐ Diagrama H-R</div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#4488ff"></div>
+        Secuencia Principal
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#ff8844"></div>
+        Gigante Roja / AGB
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#aaaaff"></div>
+        Enana Blanca
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#cc88ff"></div>
+        Estrella de Neutrones
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#111;border:1px solid #ff44aa"></div>
+        Agujero Negro
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#ffee44"></div>
+        Supernova
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /main -->
+
+<!-- ── Módulos JS (orden de dependencias) ──── -->
+<script src="js/physics.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/star.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/main.js"></script>
+
 </body>
 </html>
