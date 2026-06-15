@@ -11,17 +11,18 @@ window.star     = null;
 let simPaused   = false;
 let simSpeed    = 8;     // multiplicador de velocidad
 let animFrameId = null;
+let currentViewMode = '2d';
+let hasAutoSwitched = false;
 
 /* ── Paso de simulación por frame ────────────── */
-// dtBase: fracción de τ_MS por frame (~1/120 de la duración de MS)
 // Con simSpeed=8 se ven ~8× más rápido las fases
 function simLoop() {
   if (window.star && !simPaused) {
-    const s      = window.star;
-    const dtBase = s.tauMS / 180;     // pasos base adaptativos
+    const s  = window.star;
+    const dt = getSimulationStep(s);
 
     for (let i = 0; i < simSpeed; i++) {
-      evolveStep(s, dtBase);
+      evolveStep(s, dt);
     }
 
     // Nebulosa: spawnear partículas en esa fase
@@ -47,6 +48,8 @@ function resetStar() {
   PARTICLES.clear();
   // Limpiar trayectoria H-R si el sketch ya existe
   if (window._p5Sketch) window._p5Sketch.clearHRTrack?.();
+  hasAutoSwitched = false;
+  switchViewMode('2d');
   updateUI(window.star);
 }
 
@@ -81,7 +84,7 @@ function skipToCompact() {
         simSpeed = saved;
         return;
       }
-      for (let i = 0; i < 30; i++) evolveStep(window.star, window.star.tauMS / 180);
+      for (let i = 0; i < 30; i++) evolveStep(window.star, getSimulationStep(window.star));
       if (window.star.phase === PHASES.PLANETARY_NEBULA) PARTICLES.spawnNebula(1);
       if (window.star.phase === PHASES.SUPERNOVA) PARTICLES.tickSupernova(2);
       requestAnimationFrame(fastForward);
@@ -125,6 +128,10 @@ function updateUI(s) {
   const compactPhases = [PHASES.WHITE_DWARF, PHASES.NEUTRON_STAR, PHASES.BLACK_HOLE];
   const compPanel = document.getElementById('compactPanel');
   if (compactPhases.includes(s.phase)) {
+    if (!hasAutoSwitched) {
+      hasAutoSwitched = true;
+      switchViewMode('3d');
+    }
     compPanel.style.display = 'block';
     const titles = {
       white_dwarf:  '◽ Enana Blanca',
@@ -160,6 +167,79 @@ function _set(id, val) {
   if (el) el.textContent = val;
 }
 
+/* ── Integración de Vistas 2D / 3D ──────────────── */
+function switchViewMode(mode) {
+  currentViewMode = mode;
+  
+  // Actualizar botones de pestaña
+  document.getElementById('btn-tab-2d').classList.toggle('active', mode === '2d');
+  document.getElementById('btn-tab-3d').classList.toggle('active', mode === '3d');
+  
+  // Cambiar visibilidad de las capas de canvas
+  document.getElementById('canvas-2d-view').classList.toggle('active', mode === '2d');
+  document.getElementById('canvas-3d-view').classList.toggle('active', mode === '3d');
+  
+  // Mostrar/ocultar paneles en el sidebar
+  document.getElementById('panel-2d').style.display = mode === '2d' ? 'block' : 'none';
+  document.getElementById('panel-3d').style.display = mode === '3d' ? 'block' : 'none';
+  
+  // Redimensionar el canvas correspondiente para asegurar que se dibuje bien
+  if (mode === '2d' && window._p5Sketch) {
+    window._p5Sketch.windowResized?.();
+  } else if (mode === '3d' && window._p5Sketch3D) {
+    window._p5Sketch3D.triggerResize?.();
+    syncStarTo3D();
+  }
+}
+
+function syncStarTo3D() {
+  if (!window.star) return;
+  const s = window.star;
+  const slider = document.getElementById('remMassSlider');
+  
+  // Obtener la masa del remanente si ya colapsó, o estimar a partir del estado actual
+  let mass = s.M_compact;
+  if (mass <= 0) {
+    if (s.M_initial < 8) {
+      mass = 0.5 + (s.M_initial * 0.11); // WD mass approximation
+    } else if (s.M_initial < 25) {
+      mass = 1.2 + (s.M_initial * 0.04); // NS mass approximation
+    } else {
+      mass = Math.max(3.0, s.M_initial * 0.08); // BH mass approximation
+    }
+  }
+  
+  slider.value = mass.toFixed(2);
+  document.getElementById('remMassVal').textContent = mass.toFixed(2);
+  
+  // Actualizar etiqueta del tipo de remanente
+  const remTypeVal = document.getElementById('remTypeVal');
+  if (mass < 1.4) {
+    remTypeVal.textContent = 'Enana Blanca';
+  } else if (mass < 3.0) {
+    remTypeVal.textContent = 'Estrella de Neutrones';
+  } else {
+    remTypeVal.textContent = 'Agujero Negro';
+  }
+  
+  if (window._p5Sketch3D) {
+    window._p5Sketch3D.setRemnantMass(mass);
+  }
+}
+
+/* ── Acciones de Laboratorio 3D ─────────────────── */
+function launch3DProbe() {
+  if (window._p5Sketch3D) {
+    window._p5Sketch3D.launchProbe();
+  }
+}
+
+function trigger3DSupernova() {
+  if (window._p5Sketch3D) {
+    window._p5Sketch3D.triggerSupernova();
+  }
+}
+
 /* ──────────────────────────────────────────────
    INIT
 ────────────────────────────────────────────── */
@@ -167,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* Sliders */
   const massSlider  = document.getElementById('massSlider');
   const speedSlider = document.getElementById('speedSlider');
+  const remMassSlider = document.getElementById('remMassSlider');
 
   massSlider.addEventListener('input', function() {
     document.getElementById('massVal').textContent = parseFloat(this.value).toFixed(1);
@@ -178,11 +259,32 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('speedVal').textContent = `×${simSpeed}`;
   });
 
-  /* Iniciar estrella y sketch */
+  remMassSlider.addEventListener('input', function() {
+    const val = parseFloat(this.value);
+    document.getElementById('remMassVal').textContent = val.toFixed(2);
+    
+    const remTypeVal = document.getElementById('remTypeVal');
+    if (val < 1.4) {
+      remTypeVal.textContent = 'Enana Blanca';
+    } else if (val < 3.0) {
+      remTypeVal.textContent = 'Estrella de Neutrones';
+    } else {
+      remTypeVal.textContent = 'Agujero Negro';
+    }
+    
+    if (window._p5Sketch3D) {
+      window._p5Sketch3D.setRemnantMass(val);
+    }
+  });
+
+  /* Iniciar estrella y sketchs */
   resetStar();
 
-  const container = document.getElementById('canvas-container');
-  initSketch(container);
+  const container2D = document.getElementById('canvas-2d-view');
+  initSketch(container2D);
+
+  const container3D = document.getElementById('canvas-3d-view');
+  initSketch3D(container3D);
 
   /* Arrancar bucle de simulación */
   simLoop();

@@ -7,7 +7,7 @@
  */
 
 function initSketch(containerEl) {
-  new p5(function(p) {
+  window._p5Sketch = new p5(function(p) {
 
     let W, H, cx, cy;
     let bgStars    = [];

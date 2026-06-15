@@ -37,6 +37,32 @@ const PHASE_DURATION_FACTOR = {
   supernova:        0.008,
 };
 
+/* ── Factor de velocidad de la simulación por fase ── */
+// Valores menores a 1.0 ralentizan el transcurso del tiempo por frame en esa fase,
+// aumentando la cantidad de pasos de simulación y mejorando el detalle visual.
+const PHASE_SPEED_SCALE = {
+  protostar:        0.1,
+  main_sequence:    1.0,
+  subgiant:         0.1,
+  red_giant:        0.05,
+  helium_burning:   0.1,
+  agb:              0.05,
+  planetary_nebula: 0.05,
+  core_collapse:    0.01,
+  supernova:        0.05,
+  white_dwarf:      1.0,
+  neutron_star:     1.0,
+  black_hole:       1.0,
+};
+
+/**
+ * Retorna el paso de tiempo de simulación (dt en años) adaptativo para la fase actual.
+ */
+function getSimulationStep(star) {
+  const speedScale = PHASE_SPEED_SCALE[star.phase] || 1.0;
+  return (star.tauMS / 1000) * speedScale;
+}
+
 /* ── Etiquetas y ecuaciones para la UI ───────── */
 const PHASE_META = {
   protostar:        { name: 'Protoestrella',           cssClass: 'protostar' },
