@@ -449,6 +449,7 @@ function initSketchMerger(containerEl) {
        SIDEBAR (DOM)
     ───────────────────────────────────────────── */
     function _updateSidebar(phase, html) {
+      if (window.currentCollisionEvent !== 'kilonova') return;
       const el = document.getElementById('mergerPhaseInfo');
       if (!el) return;
       el.innerHTML =
@@ -456,6 +457,7 @@ function initSketchMerger(containerEl) {
         `letter-spacing:.1em;">${phase}</span><br><br>${html}`;
     }
     function _updateSidebarLive(html) {
+      if (window.currentCollisionEvent !== 'kilonova') return;
       const el = document.getElementById('mergerLiveInfo');
       if (el) el.innerHTML = html;
     }
