@@ -343,6 +343,23 @@ button.active {
 .guide-control-label { font-family: 'Orbitron', sans-serif; font-size: 0.52rem; color: #ffcc44; letter-spacing: 0.1em; margin-bottom: 5px; }
 .guide-control-desc { font-size: 0.56rem; color: #4a6a7a; line-height: 1.7; }
 
+/* ── Guide: lista de simulaciones ───────────── */
+.guide-sim-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.guide-sim-group { background: rgba(5,12,25,0.85); border: 1px solid #0d3055; border-radius: 4px; padding: 12px; }
+.guide-sim-group-title {
+  font-family: 'Orbitron', sans-serif; font-size: 0.56rem; letter-spacing: 0.14em;
+  color: #4a9acc; margin-bottom: 9px; padding-bottom: 6px; border-bottom: 1px solid #0d3055;
+}
+.guide-sim-item {
+  display: flex; align-items: baseline; gap: 7px;
+  font-size: 0.56rem; color: #6a9aaa; line-height: 1.75;
+}
+.guide-sim-num {
+  flex-shrink: 0; width: 16px; text-align: right;
+  font-family: 'Orbitron', sans-serif; font-size: 0.48rem; color: #2a5a7a;
+}
+.guide-sim-cond { font-size: 0.48rem; color: #2a5a6a; margin-left: 2px; }
+
 /* Custom styles for checkbox controls */
 .check-container {
   display: flex;
