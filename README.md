@@ -1,4 +1,4 @@
-# Looky — Simulador de Evolución Estelar
+# Looky - Simulador de Evolución Estelar
 
 Simulación interactiva en tiempo real del ciclo de vida de una estrella, desde protoestrella hasta objeto compacto. Implementa integración numérica RK4, ecuaciones de estructura estelar y relatividad general, renderizado en WebGL con p5.js.
 
