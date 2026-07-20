@@ -2,8 +2,6 @@
 
 Simulación interactiva en tiempo real del ciclo de vida de una estrella, desde protoestrella hasta objeto compacto. Implementa integración numérica RK4, ecuaciones de estructura estelar y relatividad general, renderizado en WebGL con p5.js.
 
-![Vista de la simulación](docs/screenshot.png)
-
 ## Características
 
 - **Simulación física completa**: integración RK4, pérdida de masa (Reimers / de Jager), ecuación TOV, límite de Chandrasekhar / Nauenberg
