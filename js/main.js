@@ -195,19 +195,21 @@ function _set(id, val) {
 /* ── Integración de Vistas 2D / 3D ──────────────── */
 function switchViewMode(mode) {
   currentViewMode = mode;
-  
+
   // Actualizar botones de pestaña
   document.getElementById('btn-tab-2d').classList.toggle('active', mode === '2d');
   document.getElementById('btn-tab-3d').classList.toggle('active', mode === '3d');
-  
+  document.getElementById('btn-tab-guide').classList.toggle('active', mode === 'guide');
+
   // Cambiar visibilidad de las capas de canvas
   document.getElementById('canvas-2d-view').classList.toggle('active', mode === '2d');
   document.getElementById('canvas-3d-view').classList.toggle('active', mode === '3d');
-  
+  document.getElementById('canvas-guide-view').classList.toggle('active', mode === 'guide');
+
   // Mostrar/ocultar paneles en el sidebar
   document.getElementById('panel-2d').style.display = mode === '2d' ? 'block' : 'none';
   document.getElementById('panel-3d').style.display = mode === '3d' ? 'block' : 'none';
-  
+
   // Redimensionar el canvas correspondiente para asegurar que se dibuje bien
   if (mode === '2d' && window._p5Sketch) {
     window._p5Sketch.windowResized?.();

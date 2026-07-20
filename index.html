@@ -30,9 +30,311 @@
     <div id="view-tabs">
       <button id="btn-tab-2d" class="tab-btn active" onclick="switchViewMode('2d')">🎨 Evolución 2D</button>
       <button id="btn-tab-3d" class="tab-btn" onclick="switchViewMode('3d')">🌌 Laboratorio 3D</button>
+      <button id="btn-tab-guide" class="tab-btn" onclick="switchViewMode('guide')">📖 Guía</button>
     </div>
     <div id="canvas-2d-view" class="view-content active"></div>
     <div id="canvas-3d-view" class="view-content"></div>
+
+    <!-- ── Guía Educativa ─────────────────────── -->
+    <div id="canvas-guide-view" class="view-content">
+    <div class="guide-wrap">
+
+      <div class="guide-header">
+        <h2>📖 Guía del Simulador</h2>
+        <p>Todo lo que necesitas saber para entender la evolución estelar</p>
+      </div>
+
+      <!-- 1. Introducción -->
+      <div class="guide-section">
+        <div class="guide-section-title">¿Qué es la Evolución Estelar?</div>
+        <p class="guide-text">
+          Las estrellas nacen de nubes de gas y polvo interestelar, viven quemando combustible nuclear en su núcleo
+          y mueren de forma distinta según su masa. Una estrella como el Sol brillará unos
+          <span class="guide-highlight">10 mil millones de años</span>; una supergigante masiva solo
+          <span class="guide-highlight">unos pocos millones</span>.
+          Este simulador modela ese ciclo completo integrando numéricamente las ecuaciones de estructura estelar
+          paso a paso, en tiempo real.
+        </p>
+        <p class="guide-text">
+          El parámetro más importante es la <span class="guide-highlight">masa inicial (M<sub>ZAMS</sub>)</span>
+          — la masa con la que la estrella entra a la Secuencia Principal. Todo lo demás: duración de vida,
+          destino final, luminosidad y temperatura, se deriva de ese único número.
+        </p>
+      </div>
+
+      <!-- 2. Fases -->
+      <div class="guide-section">
+        <div class="guide-section-title">Fases de la Vida Estelar</div>
+        <p class="guide-text" style="margin-bottom:12px;">
+          El indicador de fase en el panel lateral cambia de color según la etapa actual de la simulación.
+          Aquí cada fase explicada:
+        </p>
+        <div class="guide-phases-grid">
+
+          <div class="guide-phase-card" style="border-color:#ff4400;">
+            <div class="guide-phase-name" style="color:#ff7722;">🔴 Protoestrella</div>
+            <div class="guide-phase-tag">Todas las masas</div>
+            <p class="guide-phase-desc">Nube de gas colapsa por gravedad (contracción de Kelvin-Helmholtz). La temperatura sube hasta encender la fusión de H. Dura miles de años.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#4488cc;">
+            <div class="guide-phase-name" style="color:#88ccff;">🔵 Secuencia Principal</div>
+            <div class="guide-phase-tag">Todas las masas</div>
+            <p class="guide-phase-desc">Fase más larga. El núcleo fusiona H → He. Hay equilibrio entre la gravedad y la presión de radiación. Dura del 90% de la vida total.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#cc6600;">
+            <div class="guide-phase-name" style="color:#ffaa44;">🟠 Subgigante</div>
+            <div class="guide-phase-tag">Transición</div>
+            <p class="guide-phase-desc">El H del núcleo se agota. El núcleo se contrae, la envoltura se expande. La estrella empieza a enfriarse y crecer.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#cc2200;">
+            <div class="guide-phase-name" style="color:#ff6633;">🔴 Gigante Roja</div>
+            <div class="guide-phase-tag">&lt; 8 M☉ aprox.</div>
+            <p class="guide-phase-desc">La envoltura se expande enormemente (hasta 100-200 R☉). El H se quema en una capa alrededor del núcleo de He. La estrella se vuelve muy luminosa.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#cc8800;">
+            <div class="guide-phase-name" style="color:#ffbb33;">🟡 Quema de Helio</div>
+            <div class="guide-phase-tag">M &gt; 0.5 M☉</div>
+            <p class="guide-phase-desc">El núcleo alcanza ~100 millones K y el He se fusiona en C y O (proceso triple-alfa). La estrella se contrae levemente y calienta.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#cc4400;">
+            <div class="guide-phase-name" style="color:#ff8844;">🟠 AGB</div>
+            <div class="guide-phase-tag">Rama Asintótica Gigante</div>
+            <p class="guide-phase-desc">Capas de H y He quemándose alternadas. La estrella pierde masa en un viento estelar intenso (pérdida de Reimers y de Jager).</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#1188cc;">
+            <div class="guide-phase-name" style="color:#44ccff;">🔵 Nebulosa Planetaria</div>
+            <div class="guide-phase-tag">&lt; 8 M☉</div>
+            <p class="guide-phase-desc">La envoltura es eyectada en gas brillante. El núcleo de C/O queda expuesto y comienza a enfriarse. Dura ~20,000 años.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#ffaa00;">
+            <div class="guide-phase-name" style="color:#ffee22;">💥 Supernova</div>
+            <div class="guide-phase-tag">&gt; 8 M☉</div>
+            <p class="guide-phase-desc">El núcleo supera el límite de Chandrasekhar. Colapsa en milisegundos. La onda de choque expulsa la envoltura a miles de km/s.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#6666cc;">
+            <div class="guide-phase-name" style="color:#aaaaff;">◽ Enana Blanca</div>
+            <div class="guide-phase-tag">M<sub>rem</sub> &lt; 1.4 M☉</div>
+            <p class="guide-phase-desc">Núcleo de C/O sostenido por presión de degeneración electrónica. Sin fusión nuclear. Se enfría durante miles de millones de años.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#8844cc;">
+            <div class="guide-phase-name" style="color:#cc88ff;">💫 Estrella de Neutrones</div>
+            <div class="guide-phase-tag">1.4 – 3 M☉</div>
+            <p class="guide-phase-desc">Núcleo de neutrones sostenido por presión de degeneración neutrónica (TOV). Radio ~10 km, densidad nuclear. Puede emitir como púlsar.</p>
+          </div>
+
+          <div class="guide-phase-card" style="border-color:#880033;">
+            <div class="guide-phase-name" style="color:#ff44aa;">⚫ Agujero Negro</div>
+            <div class="guide-phase-tag">M<sub>rem</sub> &gt; 3 M☉</div>
+            <p class="guide-phase-desc">Ninguna presión puede detener el colapso. Se forma una singularidad. El radio de Schwarzschild define el horizonte de eventos, del cual ni la luz escapa.</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 3. Diagrama H-R -->
+      <div class="guide-section">
+        <div class="guide-section-title">El Diagrama H-R</div>
+        <p class="guide-text">
+          El <span class="guide-highlight">Diagrama de Hertzsprung-Russell</span> grafica luminosidad vs temperatura.
+          Es la herramienta más usada en astrofísica estelar: muestra de un vistazo en qué fase está una estrella
+          y cómo evoluciona. En la vista 2D del simulador, el punto de la estrella se mueve en tiempo real.
+        </p>
+        <svg viewBox="0 0 430 295" style="width:100%;max-width:520px;display:block;margin:12px auto;" xmlns="http://www.w3.org/2000/svg">
+          <rect width="430" height="295" fill="rgba(0,4,12,0.9)" rx="4"/>
+          <!-- Grid -->
+          <line x1="58" y1="18" x2="58" y2="248" stroke="#0a1e30" stroke-width="1"/>
+          <line x1="58" y1="248" x2="400" y2="248" stroke="#0a1e30" stroke-width="1"/>
+          <line x1="170" y1="18" x2="170" y2="248" stroke="#060e1a" stroke-width="1" stroke-dasharray="3,4"/>
+          <line x1="280" y1="18" x2="280" y2="248" stroke="#060e1a" stroke-width="1" stroke-dasharray="3,4"/>
+          <line x1="58" y1="80" x2="400" y2="80" stroke="#060e1a" stroke-width="1" stroke-dasharray="3,4"/>
+          <line x1="58" y1="160" x2="400" y2="160" stroke="#060e1a" stroke-width="1" stroke-dasharray="3,4"/>
+          <!-- Main Sequence -->
+          <path d="M 75,22 C 95,42 130,72 170,108 S 255,163 320,215 L 375,248" fill="none" stroke="#4488ff" stroke-width="10" stroke-opacity="0.18"/>
+          <path d="M 75,22 C 95,42 130,72 170,108 S 255,163 320,215 L 375,248" fill="none" stroke="#6699ff" stroke-width="2"/>
+          <!-- Giant branch (vertical from turnoff) -->
+          <path d="M 170,108 Q 148,75 120,52 Q 98,34 82,30" fill="none" stroke="#ff6633" stroke-width="7" stroke-opacity="0.22"/>
+          <path d="M 170,108 Q 148,75 120,52 Q 98,34 82,30" fill="none" stroke="#ff8844" stroke-width="1.8"/>
+          <!-- Horizontal giant branch -->
+          <path d="M 82,30 Q 138,34 190,40" fill="none" stroke="#ff8844" stroke-width="5" stroke-opacity="0.15"/>
+          <path d="M 82,30 Q 138,34 190,40" fill="none" stroke="#ff8844" stroke-width="1.5" stroke-dasharray="5,3"/>
+          <!-- White dwarf region -->
+          <ellipse cx="105" cy="232" rx="42" ry="13" fill="rgba(150,150,255,0.07)" stroke="#aaaaff" stroke-width="1" stroke-dasharray="3,3"/>
+          <!-- Supergiant label zone -->
+          <rect x="68" y="22" width="130" height="22" rx="2" fill="rgba(255,100,50,0.04)" stroke="#ff6633" stroke-width="1" stroke-dasharray="3,3"/>
+          <!-- Sun -->
+          <circle cx="228" cy="148" r="5" fill="#ffee44" stroke="#ffaa00" stroke-width="1.5"/>
+          <text x="236" y="144" fill="#ffee44" font-size="9" font-family="monospace">☉ Sol</text>
+          <!-- Labels -->
+          <text x="148" y="138" fill="#6699ff" font-size="9" font-family="monospace" transform="rotate(-37,148,138)">Secuencia Principal</text>
+          <text x="84" y="56" fill="#ff9955" font-size="9" font-family="monospace">Gigantes / AGB</text>
+          <text x="105" y="232" fill="#aaaaff" font-size="8" font-family="monospace" text-anchor="middle">E. Blancas</text>
+          <text x="100" y="28" fill="#ffaa66" font-size="8" font-family="monospace">Supergigantes</text>
+          <!-- Axis ticks / labels -->
+          <text x="72"  y="265" fill="#5a8aaa" font-size="8" font-family="monospace">50000</text>
+          <text x="155" y="265" fill="#5a8aaa" font-size="8" font-family="monospace">10000</text>
+          <text x="264" y="265" fill="#5a8aaa" font-size="8" font-family="monospace">6000</text>
+          <text x="350" y="265" fill="#5a8aaa" font-size="8" font-family="monospace">3500 K</text>
+          <text x="400" y="260" fill="#3a6a8a" font-size="7.5" font-family="monospace" text-anchor="end">← fría</text>
+          <text x="62"  y="260" fill="#3a6a8a" font-size="7.5" font-family="monospace">caliente →</text>
+          <text x="52" y="24"  fill="#5a8aaa" font-size="7.5" font-family="monospace" text-anchor="end">10⁶</text>
+          <text x="52" y="84"  fill="#5a8aaa" font-size="7.5" font-family="monospace" text-anchor="end">10³</text>
+          <text x="52" y="164" fill="#5a8aaa" font-size="7.5" font-family="monospace" text-anchor="end">1</text>
+          <text x="52" y="244" fill="#5a8aaa" font-size="7.5" font-family="monospace" text-anchor="end">10⁻³</text>
+          <text x="14" y="140" fill="#3a6a8a" font-size="8" font-family="monospace" text-anchor="middle" transform="rotate(-90,14,140)">Luminosidad (L☉)</text>
+          <text x="229" y="282" fill="#3a6a8a" font-size="9" font-family="monospace" text-anchor="middle">Temperatura superficial (K)</text>
+        </svg>
+        <p class="guide-text">
+          <span class="guide-highlight">Eje X</span> — Temperatura superficial: las estrellas <span class="guide-highlight">más calientes están a la izquierda</span> (azules, &gt;30,000 K),
+          las más frías a la derecha (rojas, ~3,000 K).<br>
+          <span class="guide-highlight">Eje Y</span> — Luminosidad en soles (L☉): las más brillantes arriba, las más tenues abajo.<br>
+          <span class="guide-highlight">Secuencia Principal</span>: banda diagonal donde las estrellas pasan la mayor parte de su vida.<br>
+          <span class="guide-highlight">Rama de Gigantes</span>: arriba a la derecha, estrellas expandidas y frías.<br>
+          <span class="guide-highlight">Enanas Blancas</span>: abajo a la izquierda, pequeñas y calientes pero poco luminosas.
+        </p>
+      </div>
+
+      <!-- 4. Objetos compactos -->
+      <div class="guide-section">
+        <div class="guide-section-title">Objetos Compactos</div>
+        <p class="guide-text" style="margin-bottom:12px;">
+          El destino final de una estrella depende de la masa de su remanente (núcleo tras expulsar la envoltura).
+          Explóralos en el <span class="guide-highlight">Laboratorio 3D</span>.
+        </p>
+        <div class="guide-compact-grid">
+
+          <div class="guide-compact-card" style="border-color:#6666cc;">
+            <div class="guide-compact-title" style="color:#aaaaff;">◽ Enana Blanca</div>
+            <div class="guide-compact-stat"><span>Masa máxima</span><span>1.4 M☉</span></div>
+            <div class="guide-compact-stat"><span>Radio típico</span><span>~0.01 R☉</span></div>
+            <div class="guide-compact-stat"><span>Densidad</span><span>~10⁶ g/cm³</span></div>
+            <div class="guide-compact-stat"><span>Sostén</span><span>P ∝ ρ⁵/³</span></div>
+            <p class="guide-compact-desc">
+              Núcleo de carbono/oxígeno sostenido por <em>presión de degeneración electrónica</em>.
+              No hay fusión nuclear. El límite de <span style="color:#ffcc44">Chandrasekhar (1.4 M☉)</span>
+              es la masa máxima que puede soportar esta presión.
+            </p>
+          </div>
+
+          <div class="guide-compact-card" style="border-color:#8844cc;">
+            <div class="guide-compact-title" style="color:#cc88ff;">💫 Estrella de Neutrones</div>
+            <div class="guide-compact-stat"><span>Masa</span><span>1.4 – 3 M☉</span></div>
+            <div class="guide-compact-stat"><span>Radio</span><span>~10 km</span></div>
+            <div class="guide-compact-stat"><span>Densidad</span><span>~10¹⁴ g/cm³</span></div>
+            <div class="guide-compact-stat"><span>Ecuación</span><span>TOV</span></div>
+            <p class="guide-compact-desc">
+              La densidad es tan alta que los electrones se fusionan con protones formando neutrones.
+              La ecuación <span style="color:#ffcc44">Tolman-Oppenheimer-Volkoff (TOV)</span> describe
+              su estructura interna en relatividad general. Activa la <em>Estructura Interna</em> en 3D para verla.
+            </p>
+          </div>
+
+          <div class="guide-compact-card" style="border-color:#880033;">
+            <div class="guide-compact-title" style="color:#ff44aa;">⚫ Agujero Negro</div>
+            <div class="guide-compact-stat"><span>Masa</span><span>&gt; 3 M☉</span></div>
+            <div class="guide-compact-stat"><span>r<sub>s</sub> para 10 M☉</span><span>~30 km</span></div>
+            <div class="guide-compact-stat"><span>Escape</span><span>imposible</span></div>
+            <div class="guide-compact-stat"><span>Geometría</span><span>Schwarzschild</span></div>
+            <p class="guide-compact-desc">
+              Ninguna fuerza puede detener el colapso. El <span style="color:#ffcc44">radio de Schwarzschild
+              r<sub>s</sub> = 2GM/c²</span> define el horizonte de eventos. El diagrama de Penrose
+              muestra la fotosfera (1.5r<sub>s</sub>) y la ISCO (3r<sub>s</sub>), la órbita circular más interna estable.
+            </p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 5. Ecuaciones clave -->
+      <div class="guide-section">
+        <div class="guide-section-title">Ecuaciones Clave (simplificadas)</div>
+        <p class="guide-text" style="margin-bottom:10px;">El simulador usa estas ecuaciones en cada paso de tiempo. Aquí explicadas en lenguaje accesible:</p>
+
+        <div class="guide-eq-row">
+          <div class="guide-eq-name">Integración RK4</div>
+          <div class="guide-eq-formula">y<sub>n+1</sub> = y<sub>n</sub> + (k₁ + 2k₂ + 2k₃ + k₄) / 6</div>
+          <p class="guide-eq-text">Método numérico de Runge-Kutta de 4to orden. Avanza el estado de la estrella (masa, temperatura, radio, composición) en pequeños pasos de tiempo con alta precisión.</p>
+        </div>
+
+        <div class="guide-eq-row">
+          <div class="guide-eq-name">Ecuación TOV — Equilibrio de Presión</div>
+          <div class="guide-eq-formula">dP/dr = −(ρ + P/c²)(M + 4πr³P/c²) · G / [r²(1 − 2GM/rc²)]</div>
+          <p class="guide-eq-text">Describe cómo la presión cae con el radio en un objeto compacto relativista. Los términos entre paréntesis son correcciones de relatividad general que no aparecen en la versión Newtoniana.</p>
+        </div>
+
+        <div class="guide-eq-row">
+          <div class="guide-eq-name">Pérdida de Masa — Reimers</div>
+          <div class="guide-eq-formula">Ṁ = −η · 4×10⁻¹³ · (L · R / M) M☉/yr</div>
+          <p class="guide-eq-text">Modela el viento estelar en la rama de gigantes. Una estrella muy luminosa y expandida pierde masa rápidamente. El parámetro η ≈ 0.5 calibra la intensidad.</p>
+        </div>
+
+        <div class="guide-eq-row">
+          <div class="guide-eq-name">Radio — Nauenberg (Enana Blanca)</div>
+          <div class="guide-eq-formula">R<sub>WD</sub> = 0.0112 R☉ · [(M<sub>Ch</sub>/M)²/³ − (M/M<sub>Ch</sub>)²/³]^½</div>
+          <p class="guide-eq-text">Fórmula analítica que da el radio de una enana blanca según su masa. Cuando M → M<sub>Ch</sub> = 1.4 M☉, el radio tiende a cero — la enana blanca colapsa.</p>
+        </div>
+
+        <div class="guide-eq-row">
+          <div class="guide-eq-name">Radio de Schwarzschild</div>
+          <div class="guide-eq-formula">r<sub>s</sub> = 2GM / c²</div>
+          <p class="guide-eq-text">El radio al que hay que comprimir una masa M para que se convierta en agujero negro. Para el Sol sería ~3 km. Para un agujero negro de 10 M☉, ~30 km.</p>
+        </div>
+
+      </div>
+
+      <!-- 6. Cómo usar -->
+      <div class="guide-section">
+        <div class="guide-section-title">Cómo Usar el Simulador</div>
+        <div class="guide-controls-grid">
+
+          <div class="guide-control-card">
+            <div class="guide-control-label">⚙ Masa Inicial (M<sub>ZAMS</sub>)</div>
+            <p class="guide-control-desc">Slider de 0.5 a 50 M☉. Controla todo: duración de vida, fases que atraviesa y destino final.<br><br>
+              <span style="color:#88ccff">&lt; 8 M☉</span> → Enana Blanca<br>
+              <span style="color:#cc88ff">8 – 25 M☉</span> → Estrella de Neutrones<br>
+              <span style="color:#ff44aa">&gt; 25 M☉</span> → Agujero Negro
+            </p>
+          </div>
+
+          <div class="guide-control-card">
+            <div class="guide-control-label">⏩ Velocidad de Simulación</div>
+            <p class="guide-control-desc">Multiplica los pasos de evolución por frame. En ×1 la simulación es muy lenta; en ×40 avanza rápido. La física es la misma a cualquier velocidad.</p>
+          </div>
+
+          <div class="guide-control-card">
+            <div class="guide-control-label">⏭ Saltar Fase / ⚡ Ir al Final</div>
+            <p class="guide-control-desc"><strong style="color:#ffcc44">Fase</strong>: adelanta la fase actual al 99% para verla terminar pronto.<br><strong style="color:#ffcc44">Final</strong>: salta directamente al objeto compacto sin esperar todas las fases intermedias.</p>
+          </div>
+
+          <div class="guide-control-card">
+            <div class="guide-control-label">⬇ CSV / ⬇ JSON</div>
+            <p class="guide-control-desc">Exporta el historial de la simulación. <strong style="color:#ffcc44">CSV</strong>: tabla con edad, fase, radio, luminosidad, temperatura y composición química. <strong style="color:#ffcc44">JSON</strong>: incluye además la trayectoria completa en el diagrama H-R.</p>
+          </div>
+
+          <div class="guide-control-card">
+            <div class="guide-control-label">🌌 Laboratorio 3D</div>
+            <p class="guide-control-desc">Activo cuando la estrella llega al objeto compacto final. Puedes ajustar la masa, activar el sistema binario, la lente gravitacional y la estructura interna (TOV). La vista cambia automáticamente al llegar a esta fase.</p>
+          </div>
+
+          <div class="guide-control-card">
+            <div class="guide-control-label">🔬 Estructura Interna</div>
+            <p class="guide-control-desc">Checkbox en el Laboratorio 3D. Activa una animación tipo tomografía que revela las capas internas del objeto compacto: para una estrella de neutrones muestra la corteza, núcleo y estado de la materia en cada capa.</p>
+          </div>
+
+        </div>
+      </div>
+
+    </div><!-- /guide-wrap -->
+    </div><!-- /canvas-guide-view -->
+
   </div>
 
   <!-- Sidebar de controles y datos -->
