@@ -14,6 +14,58 @@ let animFrameId = null;
 let currentViewMode = '2d';
 let hasAutoSwitched = false;
 
+/* ── Colisiones ──────────────────────────────── */
+window.currentCollisionEvent = 'kilonova';
+
+const COLLISION_EVENTS = {
+  kilonova: {
+    title: '💥 Fusión GW170817',
+    facts: [
+      ['Fecha',           '17 ago 2017'],
+      ['Detectores',      'LIGO + Virgo'],
+      ['Galaxia',         'NGC 4993'],
+      ['Distancia',       '~130 Mly'],
+      ['M₁',              '~1.36 M☉'],
+      ['M₂',              '~1.17 M☉'],
+      ['E<sub>GW</sub>',  '~0.05 M☉c²'],
+    ],
+  },
+  tde: {
+    title: '🌀 Disrupción AT2019qiz',
+    facts: [
+      ['Fecha',              '19 sep 2019'],
+      ['Tipo',               'TDE · Spaghettification'],
+      ['Galaxia',            'ESO 548-G081'],
+      ['Distancia',          '~215 Mly'],
+      ['M<sub>BH</sub>',     '~10⁶ M☉'],
+      ['M★',                 '~1 M☉'],
+      ['L<sub>pico</sub>',   '~10⁴⁴ erg/s'],
+    ],
+  },
+};
+
+function switchCollisionEvent(type) {
+  window.currentCollisionEvent = type;
+
+  document.getElementById('canvas-kilonova-inner').style.display = type === 'kilonova' ? '' : 'none';
+  document.getElementById('canvas-tde-inner').style.display      = type === 'tde'      ? '' : 'none';
+
+  document.getElementById('btn-event-kilonova').classList.toggle('active', type === 'kilonova');
+  document.getElementById('btn-event-tde').classList.toggle('active', type === 'tde');
+
+  const ev = COLLISION_EVENTS[type];
+  document.getElementById('mergerEventTitle').textContent = ev.title;
+  document.getElementById('mergerFacts').innerHTML = ev.facts
+    .map(([k, v]) => `<div class="merger-fact"><span>${k}</span><span>${v}</span></div>`)
+    .join('');
+
+  document.getElementById('mergerPhaseInfo').innerHTML = 'Iniciando simulación…';
+  document.getElementById('mergerLiveInfo').innerHTML  = '';
+
+  if (type === 'kilonova' && window._p5Merger) window._p5Merger.triggerResize?.();
+  if (type === 'tde'      && window._p5TDE)    window._p5TDE.triggerResize?.();
+}
+
 /* ── Modo comparación de destinos ────────────── */
 window.comparisonMode   = false;
 window.comparisonTracks = null;   // null = no calculado aún
@@ -252,13 +304,18 @@ function switchViewMode(mode) {
   } else if (mode === '3d' && window._p5Sketch3D) {
     window._p5Sketch3D.triggerResize?.();
     syncStarTo3D();
-  } else if (mode === 'merger' && window._p5Merger) {
-    window._p5Merger.triggerResize?.();
+  } else if (mode === 'merger') {
+    if (window.currentCollisionEvent === 'kilonova' && window._p5Merger) window._p5Merger.triggerResize?.();
+    if (window.currentCollisionEvent === 'tde'      && window._p5TDE)    window._p5TDE.triggerResize?.();
   }
 }
 
 function restartMerger() {
-  if (window._p5Merger) window._p5Merger.restartMerger();
+  if (window.currentCollisionEvent === 'kilonova' && window._p5Merger) {
+    window._p5Merger.restartMerger();
+  } else if (window.currentCollisionEvent === 'tde' && window._p5TDE) {
+    window._p5TDE.restartTDE();
+  }
 }
 
 function syncStarTo3D() {
@@ -421,8 +478,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const container3D = document.getElementById('canvas-3d-view');
   initSketch3D(container3D);
 
-  const containerMerger = document.getElementById('canvas-merger-view');
-  initSketchMerger(containerMerger);
+  const containerKilonova = document.getElementById('canvas-kilonova-inner');
+  initSketchMerger(containerKilonova);
+
+  const containerTDE = document.getElementById('canvas-tde-inner');
+  initSketchTDE(containerTDE);
+
+  // Poblar el panel lateral con los datos del evento inicial (kilonova)
+  switchCollisionEvent('kilonova');
 
   /* Arrancar bucle de simulación */
   simLoop();

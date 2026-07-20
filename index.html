@@ -36,8 +36,15 @@
     <div id="canvas-2d-view" class="view-content active"></div>
     <div id="canvas-3d-view" class="view-content"></div>
 
-    <!-- ── Colisiones / Kilonova ────────────────── -->
-    <div id="canvas-merger-view" class="view-content"></div>
+    <!-- ── Colisiones ────────────────────────────── -->
+    <div id="canvas-merger-view" class="view-content">
+      <div id="collision-subnav">
+        <button id="btn-event-kilonova" class="event-btn active" onclick="switchCollisionEvent('kilonova')">💥 GW170817 · Kilonova</button>
+        <button id="btn-event-tde" class="event-btn" onclick="switchCollisionEvent('tde')">🌀 AT2019qiz · Disrupción de Marea</button>
+      </div>
+      <div id="canvas-kilonova-inner"></div>
+      <div id="canvas-tde-inner" style="display:none;"></div>
+    </div>
 
     <!-- ── Guía Educativa ─────────────────────── -->
     <div id="canvas-guide-view" class="view-content">
@@ -336,11 +343,61 @@
         </div>
       </div>
 
-      <!-- 7. Simulaciones disponibles -->
+      <!-- 7. Disrupción de Marea (TDE) -->
+      <div class="guide-section">
+        <div class="guide-section-title">Disrupción de Marea — Spaghettification</div>
+        <p class="guide-text">
+          Cuando una estrella se acerca demasiado a un <span class="guide-highlight">agujero negro supermasivo</span>,
+          la diferencia de fuerza gravitacional entre el lado cercano y el lejano —la <span class="guide-highlight">fuerza de marea</span>—
+          supera la autogravedad de la estrella. El resultado es dramático: la estrella se estira en un filamento fino de plasma,
+          fenómeno conocido como <span class="guide-highlight">spaghettification</span>.
+        </p>
+        <div class="guide-compact-grid" style="grid-template-columns: repeat(auto-fill, minmax(175px,1fr));">
+
+          <div class="guide-compact-card" style="border-color:#ffaa00;">
+            <div class="guide-compact-title" style="color:#ffcc44;">Radio de Disruption</div>
+            <div class="guide-compact-stat"><span>Fórmula</span><span>r<sub>t</sub> = R★·(M<sub>BH</sub>/M★)^⅓</span></div>
+            <div class="guide-compact-stat"><span>Ejemplo</span><span>~100 R☉</span></div>
+            <div class="guide-compact-stat"><span>Comparar con r<sub>s</sub></span><span>depende de M<sub>BH</sub></span></div>
+            <p class="guide-compact-desc">Si r<sub>t</sub> &gt; r<sub>s</sub>, la disruption es observable. Para M<sub>BH</sub> &lt; ~10⁸ M☉ ocurre fuera del horizonte.</p>
+          </div>
+
+          <div class="guide-compact-card" style="border-color:#ff6633;">
+            <div class="guide-compact-title" style="color:#ff8855;">Spaghettification</div>
+            <div class="guide-compact-stat"><span>F<sub>tidal</sub></span><span>∝ M<sub>BH</sub>·R★/r³</span></div>
+            <div class="guide-compact-stat"><span>Cuando F<sub>t</sub> &gt; F<sub>grav</sub></span><span>disruption</span></div>
+            <div class="guide-compact-stat"><span>~50% material</span><span>ligado al BH</span></div>
+            <p class="guide-compact-desc">La mitad ligada forma un disco de acreción brillante. La otra mitad escapa a miles de km/s.</p>
+          </div>
+
+          <div class="guide-compact-card" style="border-color:#cc44ff;">
+            <div class="guide-compact-title" style="color:#cc88ff;">AT2019qiz (2019)</div>
+            <div class="guide-compact-stat"><span>Galaxia</span><span>ESO 548-G081</span></div>
+            <div class="guide-compact-stat"><span>Distancia</span><span>~215 Mly</span></div>
+            <div class="guide-compact-stat"><span>M<sub>BH</sub></span><span>~10⁶ M☉</span></div>
+            <p class="guide-compact-desc">Uno de los TDE mejor observados. La curva de luz reveló por primera vez la fase de acreción de material ligado antes del pico.</p>
+          </div>
+
+          <div class="guide-compact-card" style="border-color:#4488cc;">
+            <div class="guide-compact-title" style="color:#88bbff;">Disco de Acreción X</div>
+            <div class="guide-compact-stat"><span>T<sub>disco</sub></span><span>10⁵–10⁷ K</span></div>
+            <div class="guide-compact-stat"><span>L<sub>pico</sub></span><span>~10⁴⁴ erg/s</span></div>
+            <div class="guide-compact-stat"><span>Duración</span><span>semanas–meses</span></div>
+            <p class="guide-compact-desc">El disco emite en rayos X y UV. Jets relativistas emergen de los polos a &gt;0.9c. El brillo decae como t<sup>−5/3</sup> tras el pico.</p>
+          </div>
+
+        </div>
+        <p class="guide-text" style="margin-top:12px;">
+          Explora la simulación completa en la pestaña <span class="guide-highlight">💥 Colisiones</span> → botón
+          <span class="guide-highlight">🌀 AT2019qiz · Disrupción de Marea</span>.
+        </p>
+      </div>
+
+      <!-- 8. Simulaciones disponibles -->
       <div class="guide-section">
         <div class="guide-section-title">Simulaciones Disponibles</div>
         <p class="guide-text" style="margin-bottom:12px;">
-          Looky cuenta con <span class="guide-highlight">23 simulaciones</span> distribuidas en tres vistas.
+          Looky cuenta con <span class="guide-highlight">25 simulaciones</span> distribuidas en cuatro vistas.
         </p>
         <div class="guide-sim-groups">
 
@@ -380,6 +437,13 @@
             <div class="guide-sim-item"><span class="guide-sim-num">21</span> Trayectoria evolutiva en tiempo real</div>
             <div class="guide-sim-item"><span class="guide-sim-num">22</span> Fondo del catálogo Hipparcos (~880 estrellas reales)</div>
             <div class="guide-sim-item"><span class="guide-sim-num">23</span> Comparador de destinos: 1 / 8 / 25 M☉ simultáneos</div>
+          </div>
+
+          <!-- Colisiones -->
+          <div class="guide-sim-group">
+            <div class="guide-sim-group-title">💥 Colisiones — Eventos de Alta Energía</div>
+            <div class="guide-sim-item"><span class="guide-sim-num">24</span> GW170817 — Fusión NS/Kilonova <span class="guide-sim-cond">· ondas gravitacionales · proceso-r</span></div>
+            <div class="guide-sim-item"><span class="guide-sim-num">25</span> AT2019qiz — Disrupción de Marea (TDE) <span class="guide-sim-cond">· spaghettification · M<sub>BH</sub>≈10⁶M☉</span></div>
           </div>
 
         </div>
@@ -478,17 +542,11 @@
       <div id="probeStatus" style="font-size:0.52rem; color:#88ccff; margin-top:5px; text-align:center; min-height:12px;">Sonda lista.</div>
     </div>
 
-    <!-- Panel Colisiones GW170817 (visible solo en modo merger) -->
+    <!-- Panel Colisiones (dinámico — kilonova o TDE) -->
     <div class="panel" id="panel-merger" style="display:none;">
-      <div class="panel-title">💥 Fusión GW170817</div>
+      <div class="panel-title" id="mergerEventTitle">💥 Fusión GW170817</div>
 
-      <div class="merger-fact"><span>Fecha</span><span>17 ago 2017</span></div>
-      <div class="merger-fact"><span>Detectores</span><span>LIGO + Virgo</span></div>
-      <div class="merger-fact"><span>Galaxia</span><span>NGC 4993</span></div>
-      <div class="merger-fact"><span>Distancia</span><span>~130 Mly</span></div>
-      <div class="merger-fact"><span>M₁</span><span>~1.36 M☉</span></div>
-      <div class="merger-fact"><span>M₂</span><span>~1.17 M☉</span></div>
-      <div class="merger-fact"><span>E<sub>GW</sub></span><span>~0.05 M☉c²</span></div>
+      <div id="mergerFacts"></div>
 
       <div class="separator"></div>
 
@@ -615,6 +673,7 @@
 <script src="js/hipparcos.js"></script>
 <script src="js/physics.js"></script>
 <script src="js/merger.js"></script>
+<script src="js/tde.js"></script>
 <script src="js/particles.js"></script>
 <script src="js/star.js"></script>
 <script src="js/renderer.js"></script>
