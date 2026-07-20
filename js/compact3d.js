@@ -30,7 +30,11 @@ function initSketch3D(containerEl) {
 
     // Estrella compañera binaria
     let binaryOrbitAngle = 0;
-    
+
+    // Vista de Corte TOV — animación tipo tomografía
+    let tovRevealProgress = 0;   // 0 = cerrado, 1 = completamente abierto
+    let prevCrossSection = false;
+
     // Dimensiones del lienzo
     let W, H;
 
@@ -212,6 +216,12 @@ function initSketch3D(containerEl) {
       const crossSection = checkCrossSectionEl ? checkCrossSectionEl.checked : false;
       const lensing = checkLensingEl ? checkLensingEl.checked : true;
 
+      // Animación tomografía: avanza al activar, retrocede al desactivar
+      if (crossSection && !prevCrossSection) tovRevealProgress = 0;
+      if (crossSection)  tovRevealProgress = Math.min(1, tovRevealProgress + 0.018);
+      else               tovRevealProgress = Math.max(0, tovRevealProgress - 0.04);
+      prevCrossSection = crossSection;
+
       // ── Renderizar Sistema Binario si está activo ──
       if (binaryEnabled && remnantType !== 'white_dwarf') {
         binaryOrbitAngle += 0.008;
@@ -235,11 +245,11 @@ function initSketch3D(containerEl) {
       if (showRemnant) {
         p.push();
         if (remnantType === 'white_dwarf') {
-          _drawWhiteDwarf();
+          _drawWhiteDwarf(crossSection);
         } else if (remnantType === 'neutron_star') {
           _drawNeutronStar(crossSection);
         } else if (remnantType === 'black_hole') {
-          _drawBlackHole(lensing);
+          _drawBlackHole(lensing, crossSection);
         }
         p.pop();
       }
@@ -356,23 +366,161 @@ function initSketch3D(containerEl) {
     /* ──────────────────────────────────────────
        ENANA BLANCA (M < 1.4 M☉)
        ────────────────────────────────────────── */
-    function _drawWhiteDwarf() {
+    function _drawWhiteDwarf(crossSection) {
       // Radio inversamente proporcional a la masa (Nauenberg)
       const r_wd = 22 * p.pow(1.0 - remnantMass/1.44, 0.25) / p.pow(remnantMass, 0.33);
       const radius = p.constrain(r_wd, 8, 30);
 
-      // Núcleo de degeneración azul-blanco brillante
+      if (crossSection && tovRevealProgress > 0) {
+        _drawWhiteDwarfCrossSection(radius);
+        return;
+      }
+
+      // Renderizado normal
       p.ambientMaterial(220, 240, 255);
       p.emissiveMaterial(180, 210, 255);
       p.sphere(radius);
 
-      // Halo de brillo exterior multicapa
       p.push();
       for (let i = 1; i <= 3; i++) {
         p.ambientMaterial(120, 160, 255, 15 - i * 4);
         p.sphere(radius + i * 4);
       }
       p.pop();
+    }
+
+    function _drawWhiteDwarfCrossSection(radius) {
+      const rev = tovRevealProgress;
+
+      // Capas de degeneración (de fuera a dentro)
+      // La masa determina qué tan relativista es el gas degenerado (≥1.2M☉ → ultra-rel.)
+      const isUltraRel = remnantMass >= 1.1;
+
+      // Capa 1: Envoltura de hidrógeno/helio (exterior no degenerado)
+      const r_env   = radius;
+      const r_semi  = radius * 0.80; // Zona semi-degenerada
+      const r_nonRel= radius * 0.55; // Gas e⁻ degenerado no-relativista
+      const r_core  = radius * 0.28; // Núcleo carbono-oxígeno (ultra-rel. si M≥1.1)
+
+      if (rev > 0.0) {
+        const a = p.map(rev, 0, 0.25, 0, 120, true);
+        p.push(); p.ambientMaterial(210, 195, 120, a); p.sphere(r_env); p.pop();
+      }
+      if (rev > 0.25) {
+        const a = p.map(rev, 0.25, 0.5, 0, 190, true);
+        p.push(); p.ambientMaterial(160, 180, 255, a); p.emissiveMaterial(60, 80, 180); p.sphere(r_semi); p.pop();
+      }
+      if (rev > 0.5) {
+        const a = p.map(rev, 0.5, 0.75, 0, 220, true);
+        p.push(); p.ambientMaterial(100, 160, 255, a); p.emissiveMaterial(40, 100, 255); p.sphere(r_nonRel); p.pop();
+      }
+      if (rev > 0.75) {
+        const a = p.map(rev, 0.75, 1.0, 0, 255, true);
+        const cr = isUltraRel ? 255 : 200;
+        const cg = isUltraRel ? 80  : 200;
+        const cb = isUltraRel ? 80  : 255;
+        p.push(); p.ambientMaterial(cr, cg, cb, a); p.emissiveMaterial(cr*0.6, cg*0.4, cb*0.6); p.sphere(r_core); p.pop();
+      }
+
+      // Anillos de corte ecuatoriales
+      if (rev > 0.4) {
+        p.push();
+        p.rotateX(p.HALF_PI);
+        p.noFill();
+        p.strokeWeight(1.2);
+        const rings = [
+          [r_env,    [210,195,120]],
+          [r_semi,   [160,180,255]],
+          [r_nonRel, [100,160,255]],
+          [r_core,   [200, 80, 80]],
+        ];
+        for (const [r, c] of rings) {
+          p.stroke(c[0], c[1], c[2], 180);
+          p.ellipse(0, 0, r*2, r*2);
+        }
+        p.noStroke();
+        p.pop();
+      }
+
+      // Perfil P(r) como barras laterales (columnas de color)
+      if (rev > 0.6) {
+        _drawDegeneracyProfileBars(radius, isUltraRel, p.map(rev, 0.6, 1.0, 0, 1, true));
+      }
+
+      // Etiquetas en 3D
+      if (rev > 0.85) {
+        const labelAlpha = p.map(rev, 0.85, 1.0, 0, 255, true);
+        p.push();
+        p.fill(210, 195, 120, labelAlpha); p.noStroke();
+        p.textSize(5); p.textAlign(p.LEFT, p.CENTER);
+        p.translate(r_env + 4, 0, 0); p.text('Envoltura He/H', 0, 0);
+        p.pop();
+        p.push();
+        p.fill(160, 180, 255, labelAlpha); p.noStroke();
+        p.textSize(5); p.textAlign(p.LEFT, p.CENTER);
+        p.translate(r_semi + 4, -r_semi * 0.3, 0); p.text('Zona semi-degen.', 0, 0);
+        p.pop();
+        p.push();
+        p.fill(100, 160, 255, labelAlpha); p.noStroke();
+        p.textSize(5); p.textAlign(p.LEFT, p.CENTER);
+        p.translate(r_nonRel + 4, -r_nonRel * 0.6, 0); p.text('Gas e⁻ degen. (P∝ρ⁵/³)', 0, 0);
+        p.pop();
+        p.push();
+        const lc = isUltraRel ? [255,80,80] : [200,200,255];
+        p.fill(lc[0], lc[1], lc[2], labelAlpha); p.noStroke();
+        p.textSize(5); p.textAlign(p.LEFT, p.CENTER);
+        p.translate(r_core + 4, -r_core * 0.9, 0);
+        p.text(isUltraRel ? 'Núcleo ultra-rel. (P∝ρ⁴/³)' : 'Núcleo C/O degen.', 0, 0);
+        p.pop();
+      }
+    }
+
+    function _drawDegeneracyProfileBars(radius, isUltraRel, alphaFactor) {
+      // Barras verticales mostrando P(r) y ρ(r) a la derecha de la estrella
+      const nBars = 20;
+      const barW = 3;
+      const barMaxH = radius * 0.6;
+      const startX = radius + 18;
+      const baseY  = radius * 0.8;
+      const alpha  = 180 * alphaFactor;
+
+      p.push();
+      p.noStroke();
+      p.textSize(4);
+      p.fill(180, 180, 180, alpha);
+      p.textAlign(p.LEFT, p.CENTER);
+      p.translate(startX, -baseY - 8, 0);
+      p.text('P(r)  ρ(r)', 0, 0);
+      p.pop();
+
+      for (let i = 0; i < nBars; i++) {
+        const t = i / (nBars - 1);    // 0 = centro, 1 = superficie
+        const r_norm = t;
+
+        // Perfil de densidad politrópico ρ(r) = ρ_c·(1−r²)
+        const rhoNorm = p.max(0, 1 - r_norm * r_norm);
+        // Presión: no-relativista P∝ρ^5/3, ultra-relativista P∝ρ^4/3
+        const gamma = isUltraRel ? (4/3) : (5/3);
+        const pNorm = Math.pow(Math.max(0, rhoNorm), gamma);
+
+        const x = startX + i * (barW + 1);
+        const hP   = barMaxH * pNorm;
+        const hRho = barMaxH * rhoNorm;
+
+        // Barra presión (azul)
+        p.push();
+        p.translate(x, baseY - hP / 2, 0);
+        p.ambientMaterial(80, 140, 255, alpha);
+        p.box(barW, hP, barW);
+        p.pop();
+
+        // Barra densidad (cian, desplazada)
+        p.push();
+        p.translate(x, baseY - hRho / 2 - barMaxH - 4, 0);
+        p.ambientMaterial(0, 200, 180, alpha);
+        p.box(barW, hRho, barW);
+        p.pop();
+      }
     }
 
     function rotateVectorZ(v, angle) {
@@ -408,39 +556,8 @@ function initSketch3D(containerEl) {
       const rotAngle = p.frameCount * spinSpeed;
 
       // ── Vista de Corte (Estructura TOV) ──
-      if (crossSection) {
-        p.rotateY(rotAngle);
-        
-        // Densidad central simulada (TOV) dependiente de la masa
-        // Límite de goteo de neutrones (neutron drip) a 4x10^11 g/cm^3
-        const rho_c = 1.2e12 * remnantMass;
-        const dripRatio = p.sqrt(p.max(0, 1 - 4.0e11 / rho_c));
-        const r_drip = r_ns * dripRatio;
-
-        // Dibujar hemisferio trasero (superficie externa de la corteza)
-        p.push();
-        p.ambientMaterial(100, 100, 110, 100); // Semitransparente
-        p.sphere(r_ns);
-        p.pop();
-
-        // Dibujar núcleo superfluido interno (Corteza interna superando el neutron drip)
-        p.push();
-        p.ambientMaterial(140, 80, 255, 230); // Morado brillante
-        p.emissiveMaterial(80, 20, 180);
-        p.sphere(r_drip);
-        p.pop();
-
-        // Anillo de indicación del límite de goteo de neutrones (Corteza Sólida exterior)
-        p.push();
-        p.rotateX(p.HALF_PI);
-        p.stroke(255, 80, 80, 200);
-        p.strokeWeight(1.5);
-        p.noFill();
-        p.ellipse(0, 0, r_ns * 2, r_ns * 2);
-        p.ellipse(0, 0, r_drip * 2, r_drip * 2);
-        p.noStroke();
-        p.pop();
-        
+      if (crossSection && tovRevealProgress > 0) {
+        _drawNeutronStarCrossSection(r_ns, rotAngle);
       } else {
         // Renderizado normal: Esfera ultra densa magnetizada
         p.rotateY(rotAngle);
@@ -509,12 +626,161 @@ function initSketch3D(containerEl) {
     }
 
     /* ──────────────────────────────────────────
+       ESTRELLA DE NEUTRONES — Vista de Corte TOV
+       ────────────────────────────────────────── */
+    function _drawNeutronStarCrossSection(r_ns, rotAngle) {
+      const rev = tovRevealProgress;
+
+      // Límites de capa usando densidad central TOV  (g/cm³ escalado)
+      // ρ_c ~ 1.2e12 · M/M☉ — aproximación politrópica n=1
+      const rho_c    = 1.2e12 * remnantMass;
+      const dripRatio = p.sqrt(p.max(0, 1 - 4.0e11 / rho_c));
+
+      // Radios de capa (normalizados a r_ns)
+      const r_outerCrust = r_ns;               // Superficie (corteza exterior)
+      const r_innerCrust = r_ns * dripRatio;   // Límite de goteo de neutrones
+      const r_outerCore  = r_ns * 0.50;        // Núcleo externo (n superfluido)
+      const r_innerCore  = r_ns * 0.22;        // Núcleo interno (¿quarks?)
+
+      // Rotación lenta para ver el interior
+      p.rotateY(rotAngle * 0.25);
+
+      // Capa 4: Corteza exterior — Fe/Ni en red cristalina (gris-azul)
+      if (rev > 0) {
+        const a = p.map(rev, 0, 0.25, 0, 110, true);
+        p.push(); p.ambientMaterial(90, 100, 130, a); p.sphere(r_outerCrust); p.pop();
+      }
+
+      // Capa 3: Corteza interior — zona de goteo de neutrones (púrpura)
+      if (rev > 0.25) {
+        const a = p.map(rev, 0.25, 0.5, 0, 200, true);
+        p.push(); p.ambientMaterial(130, 60, 220, a); p.emissiveMaterial(60, 20, 130); p.sphere(r_innerCrust); p.pop();
+      }
+
+      // Capa 2: Núcleo exterior — neutrones superfluidos + protones (cian brillante)
+      if (rev > 0.5) {
+        const a = p.map(rev, 0.5, 0.75, 0, 230, true);
+        p.push(); p.ambientMaterial(0, 190, 255, a); p.emissiveMaterial(0, 100, 220); p.sphere(r_outerCore); p.pop();
+      }
+
+      // Capa 1: Núcleo interior — posible materia de quarks (amarillo-blanco)
+      if (rev > 0.75) {
+        const a = p.map(rev, 0.75, 1.0, 0, 255, true);
+        p.push(); p.ambientMaterial(255, 240, 90, a); p.emissiveMaterial(210, 160, 0); p.sphere(r_innerCore); p.pop();
+      }
+
+      // Anillos ecuatoriales de corte
+      if (rev > 0.3) {
+        p.push();
+        p.rotateX(p.HALF_PI);
+        p.noFill();
+        p.strokeWeight(1.4);
+        const ringDefs = [
+          [r_outerCrust, [90,  100, 130]],
+          [r_innerCrust, [130,  60, 220]],
+          [r_outerCore,  [  0, 190, 255]],
+          [r_innerCore,  [255, 240,  90]],
+        ];
+        for (const [r, c] of ringDefs) {
+          p.stroke(c[0], c[1], c[2], 200);
+          p.ellipse(0, 0, r * 2, r * 2);
+        }
+        p.noStroke();
+        p.pop();
+      }
+
+      // Perfil TOV — P(r) y ρ(r) como barras laterales
+      if (rev > 0.55) {
+        _drawTOVProfileBars(r_ns, p.map(rev, 0.55, 1.0, 0, 1, true));
+      }
+
+      // Etiquetas de capa
+      if (rev > 0.88) {
+        const la = p.map(rev, 0.88, 1.0, 0, 255, true);
+        p.textSize(5); p.noStroke();
+        const labels = [
+          [r_outerCrust + 4,  0.10, [90, 100, 130],  'Corteza ext. (Fe/Ni)'],
+          [r_innerCrust + 4,  0.30, [130, 60, 220],   'Corteza int. (neutron drip)'],
+          [r_outerCore  + 4,  0.55, [0, 190, 255],    'Núcleo ext. (n superfl.)'],
+          [r_innerCore  + 4,  0.82, [255, 240, 90],   'Núcleo int. (quarks?)'],
+        ];
+        for (const [rx, fy, c, txt] of labels) {
+          p.push();
+          p.fill(c[0], c[1], c[2], la);
+          p.textAlign(p.LEFT, p.CENTER);
+          p.translate(rx, -r_ns * fy, 0);
+          p.text(txt, 0, 0);
+          p.pop();
+        }
+      }
+    }
+
+    // Barras del perfil TOV — presión y densidad
+    function _drawTOVProfileBars(r_ns, alphaFactor) {
+      const nBars  = 22;
+      const barW   = 2.5;
+      const barMaxH = r_ns * 0.55;
+      const startX  = r_ns + 20;
+      const baseY   = r_ns * 0.7;
+      const alpha   = 190 * alphaFactor;
+
+      // Título del perfil
+      p.push();
+      p.fill(200, 200, 200, alpha); p.noStroke();
+      p.textSize(4.5); p.textAlign(p.LEFT, p.CENTER);
+      p.translate(startX, -baseY - 10, 0); p.text('Perfil TOV: P(r)  ρ(r)', 0, 0);
+      p.pop();
+
+      for (let i = 0; i < nBars; i++) {
+        const t = i / (nBars - 1);  // 0 = centro, 1 = superficie
+        // Politrópica relativista n=1: ρ(r) = ρ_c·(1−r²),  P∝ρ²
+        const rhoNorm = Math.max(0, 1 - t * t);
+        const pNorm   = rhoNorm * rhoNorm;  // TOV: P ≈ K·ρ² (EOS nuclear)
+
+        const x  = startX + i * (barW + 1);
+        const hP   = barMaxH * pNorm;
+        const hRho = barMaxH * rhoNorm;
+
+        // Barra P(r) — naranja
+        p.push();
+        p.translate(x, baseY - hP / 2, 0);
+        p.ambientMaterial(255, 140, 40, alpha);
+        p.box(barW, hP, barW);
+        p.pop();
+
+        // Barra ρ(r) — cian, desplazada arriba
+        p.push();
+        p.translate(x, baseY - hRho / 2 - barMaxH - 5, 0);
+        p.ambientMaterial(0, 210, 190, alpha);
+        p.box(barW, hRho, barW);
+        p.pop();
+      }
+
+      // Leyenda
+      p.push();
+      p.fill(255, 140, 40, alpha); p.noStroke();
+      p.textSize(4); p.textAlign(p.LEFT, p.CENTER);
+      p.translate(startX, baseY + 6, 0); p.text('─ P(r)', 0, 0);
+      p.pop();
+      p.push();
+      p.fill(0, 210, 190, alpha); p.noStroke();
+      p.textSize(4); p.textAlign(p.LEFT, p.CENTER);
+      p.translate(startX, -baseY - barMaxH - 8, 0); p.text('─ ρ(r)', 0, 0);
+      p.pop();
+    }
+
+    /* ──────────────────────────────────────────
        AGUJERO NEGRO (M >= 3 M☉)
        ────────────────────────────────────────── */
-    function _drawBlackHole(lensing) {
+    function _drawBlackHole(lensing, crossSection) {
       // Horizonte de Sucesos: Radio de Schwarzschild Rs = 2GM/c^2
       // Escalado visual de Rs proporcional a la masa del remanente
       const rs_radius = 12 * remnantMass;
+
+      if (crossSection && tovRevealProgress > 0) {
+        _drawBlackHolePenrose(rs_radius, lensing);
+        return;
+      }
       
       // ── Horizonte de Sucesos ──
       p.push();
@@ -581,6 +847,113 @@ function initSketch3D(containerEl) {
           p.vertex(x2, y2, 0);
         }
         p.endShape();
+        p.pop();
+      }
+    }
+
+    /* ──────────────────────────────────────────
+       AGUJERO NEGRO — Diagrama de Penrose simplificado
+       ────────────────────────────────────────── */
+    function _drawBlackHolePenrose(rs_radius, lensing) {
+      const rev = tovRevealProgress;
+
+      // Radios físicos clave (escalados visualmente)
+      const r_sing  = rs_radius * 0.04;          // Singularidad (puntual, visual = pequeña)
+      const r_eh    = rs_radius;                  // Horizonte de Sucesos (Rs)
+      const r_phot  = rs_radius * 1.5;           // Fotosfera (r = 1.5·Rs)
+      const r_isco  = rs_radius * 3.0;           // ISCO — Órbita más interna estable (r = 3·Rs)
+      const r_ergo  = rs_radius * 1.0;           // Ergoesfera (Kerr, aprox. igual a Rs en ecuador)
+
+      // Horizonte de sucesos — esfera negra
+      p.push();
+      p.ambientMaterial(0, 0, 0); p.emissiveMaterial(0, 0, 0);
+      p.sphere(r_eh);
+      p.pop();
+
+      if (rev < 0.05) return;
+
+      // Singularidad central (punto brillante — simbólico)
+      if (rev > 0.1) {
+        const a = p.map(rev, 0.1, 0.35, 0, 255, true);
+        p.push();
+        p.ambientMaterial(255, 255, 255, a); p.emissiveMaterial(255, 200, 100);
+        p.sphere(r_sing);
+        p.pop();
+      }
+
+      // Anillo de la fotosfera (r = 1.5·Rs) — conos de luz atrapados
+      if (rev > 0.2) {
+        const a = p.map(rev, 0.2, 0.5, 0, 210, true);
+        p.push();
+        p.rotateX(p.HALF_PI);
+        p.noFill(); p.strokeWeight(2.0); p.stroke(255, 80, 80, a);
+        p.ellipse(0, 0, r_phot * 2, r_phot * 2);
+        p.noStroke();
+        p.pop();
+        // Torus fino que representa la fotosfera
+        p.push();
+        p.rotateX(p.HALF_PI); p.rotateY(p.frameCount * 0.01);
+        p.ambientMaterial(255, 60, 60, a * 0.5);
+        p.torus(r_phot, 1.5);
+        p.pop();
+      }
+
+      // ISCO — órbita circular estable más interna
+      if (rev > 0.4) {
+        const a = p.map(rev, 0.4, 0.7, 0, 200, true);
+        p.push();
+        p.rotateX(p.HALF_PI); p.rotateY(p.frameCount * 0.006);
+        p.ambientMaterial(255, 200, 0, a);
+        p.torus(r_isco, 2.0);
+        p.pop();
+      }
+
+      // Conos de luz (Penrose) — líneas diagonales a ±45° apuntando al horizonte
+      if (rev > 0.55) {
+        const a = p.map(rev, 0.55, 0.85, 0, 170, true);
+        p.push();
+        p.stroke(100, 200, 255, a); p.strokeWeight(1.0);
+        for (let side = -1; side <= 1; side += 2) {
+          for (let ang = 0; ang < p.TWO_PI; ang += p.PI / 4) {
+            const px = r_isco * p.cos(ang);
+            const pz = r_isco * p.sin(ang);
+            p.line(px, 0, pz, px * 0.3, side * r_isco * 0.7, pz * 0.3);
+          }
+        }
+        p.noStroke();
+        p.pop();
+      }
+
+      // Disco de acreción (igual que el normal)
+      if (lensing) {
+        const innerDisk = r_eh * 1.5;
+        const outerDisk = r_eh * 4.2;
+        p.push(); p.rotateX(p.HALF_PI); _drawDiskGeometry(innerDisk, outerDisk, 0.02); p.pop();
+      }
+
+      // Etiquetas
+      if (rev > 0.80) {
+        const la = p.map(rev, 0.80, 1.0, 0, 255, true);
+        p.textSize(5); p.noStroke();
+        const lbls = [
+          [r_eh   + 4, 0.05, [180, 180, 220], `Rs = ${(2*remnantMass).toFixed(1)} km · Horizonte`],
+          [r_phot + 4, 0.35, [255,  80,  80], 'r=1.5Rs · Fotosfera'],
+          [r_isco + 4, 0.65, [255, 200,   0], 'r=3Rs  · ISCO'],
+        ];
+        for (const [rx, fy, c, txt] of lbls) {
+          p.push();
+          p.fill(c[0], c[1], c[2], la);
+          p.textAlign(p.LEFT, p.CENTER);
+          p.translate(rx, -r_isco * fy, 0);
+          p.text(txt, 0, 0);
+          p.pop();
+        }
+        // Singularidad
+        p.push();
+        p.fill(255, 255, 255, la); p.textAlign(p.LEFT, p.CENTER);
+        p.textSize(5);
+        p.translate(r_sing + 3, -r_sing - 5, 0);
+        p.text('Singularidad (ρ→∞)', 0, 0);
         p.pop();
       }
     }
