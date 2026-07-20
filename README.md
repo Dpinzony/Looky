@@ -49,14 +49,6 @@ Looky/
     └── CONTRIBUTING.md # Guía para contribuidores
 ```
 
-## Equipo
-
-| Integrante | Responsabilidades |
-|---|---|
-| Yamid González (yagonzalez) | Vista de Corte TOV, exportación de datos, documentación |
-| Diego Pinzón (dpinzony) | Sistema binario, lente gravitacional, optimización |
-| Sharick Torres (shtorres) | Panel educativo, modo comparación |
-| Andrés Montaña (andramirezm) | Sonificación, exportación CSV/JSON |
 
 ## Licencia
 
