@@ -376,6 +376,9 @@
         <button onclick="exportCSV()" title="Exportar historial de simulación como CSV">⬇ CSV</button>
         <button onclick="exportJSON()" title="Exportar trayectoria H-R y datos como JSON">⬇ JSON</button>
       </div>
+      <div class="btn-row" style="margin-top:4px;">
+        <button id="btnCompare" onclick="toggleComparison()" title="Superponer trayectorias de 1, 8 y 25 M☉ en el diagrama H-R">◈ Comparar destinos</button>
+      </div>
     </div>
 
     <!-- Panel del Laboratorio 3D (visible solo en modo 3D) -->
@@ -532,6 +535,7 @@
 </div><!-- /main -->
 
 <!-- ── Módulos JS (orden de dependencias) ──── -->
+<script src="js/hipparcos.js"></script>
 <script src="js/physics.js"></script>
 <script src="js/particles.js"></script>
 <script src="js/star.js"></script>
