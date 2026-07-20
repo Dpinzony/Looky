@@ -188,7 +188,7 @@ function updateUI(s) {
   if (compactPhases.includes(s.phase)) {
     if (!hasAutoSwitched) {
       hasAutoSwitched = true;
-      switchViewMode('3d');
+      if (currentViewMode === '2d') switchViewMode('3d');
     }
     compPanel.style.display = 'block';
     const titles = {
