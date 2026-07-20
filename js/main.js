@@ -14,6 +14,39 @@ let animFrameId = null;
 let currentViewMode = '2d';
 let hasAutoSwitched = false;
 
+/* ── Modo comparación de destinos ────────────── */
+window.comparisonMode   = false;
+window.comparisonTracks = null;   // null = no calculado aún
+
+function toggleComparison() {
+  window.comparisonMode = !window.comparisonMode;
+  const btn = document.getElementById('btnCompare');
+  if (btn) btn.classList.toggle('active', window.comparisonMode);
+
+  if (window.comparisonMode && !window.comparisonTracks) {
+    window.comparisonTracks = [
+      _computeCompTrack(1.0),
+      _computeCompTrack(8.0),
+      _computeCompTrack(25.0),
+    ];
+  }
+}
+
+function _computeCompTrack(mass) {
+  const s = createStar(mass);
+  const pts = [];
+  const COMPACT = [PHASES.WHITE_DWARF, PHASES.NEUTRON_STAR, PHASES.BLACK_HOLE];
+  for (let i = 0; i < 18000; i++) {
+    const dt = getSimulationStep(s);
+    evolveStep(s, dt);
+    if (i % 25 === 0 && s.T > 0 && s.phase !== PHASES.PROTOSTAR) {
+      pts.push({ T: s.T, L: s.L });
+    }
+    if (COMPACT.includes(s.phase)) { pts.push({ T: s.T, L: s.L }); break; }
+  }
+  return pts;
+}
+
 /* ── Buffer de exportación (SCRUM-14) ─────────── */
 const SIM_EXPORT_INTERVAL = 120; // acumular cada N pasos de evolución
 let   simExportCounter    = 0;
