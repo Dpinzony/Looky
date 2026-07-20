@@ -12,7 +12,17 @@ function initSketch(containerEl) {
     let W, H, cx, cy;
     let bgStars    = [];
     let hrCanvas;          // mini diagrama H-R
+    let hrBgCanvas;        // fondo estático: catálogo Hipparcos
     let hrPoints   = [];   // trayectoria evolutiva
+
+    /* Coordenadas del mini diagrama H-R (compartidas entre build y draw) */
+    const HR_W = 220, HR_H = 175;
+    const HR_T_MIN = 2800, HR_T_MAX = 55000;
+    const HR_L_MIN = 1e-4, HR_L_MAX = 1e7;
+    const _hrX = T => HR_W * 0.88 - (Math.log10(T) - Math.log10(HR_T_MIN)) /
+                      (Math.log10(HR_T_MAX) - Math.log10(HR_T_MIN)) * HR_W * 0.78;
+    const _hrY = L => HR_H * 0.90 - (Math.log10(Math.max(L, HR_L_MIN)) - Math.log10(HR_L_MIN)) /
+                      (Math.log10(HR_L_MAX) - Math.log10(HR_L_MIN)) * HR_H * 0.82;
 
     /* ──────────────────────────────────────────
        SETUP
@@ -26,8 +36,11 @@ function initSketch(containerEl) {
       cy = H / 2 - 20;
 
       _buildBgStars();
-      hrCanvas = p.createGraphics(220, 175);
+      hrCanvas   = p.createGraphics(HR_W, HR_H);
       hrCanvas.colorMode(p.RGB, 255);
+      hrBgCanvas = p.createGraphics(HR_W, HR_H);
+      hrBgCanvas.colorMode(p.RGB, 255);
+      _buildHipparcosBg();
     };
 
     p.windowResized = function() {
@@ -85,6 +98,24 @@ function initSketch(containerEl) {
         p.fill(b, b, b, 200);
         p.circle(s.x, s.y, s.sz);
       });
+    }
+
+    /* ──────────────────────────────────────────
+       FONDO HIPPARCOS (dibujado una sola vez)
+    ────────────────────────────────────────── */
+    function _buildHipparcosBg() {
+      const bg = hrBgCanvas;
+      bg.clear();
+      const stars = window.HIPPARCOS_STARS;
+      if (!stars) return;
+      bg.noStroke();
+      for (const [T, L] of stars) {
+        const x = _hrX(T), y = _hrY(L);
+        if (x < 0 || x > HR_W || y < 0 || y > HR_H) continue;
+        const c = PHYSICS.tempToColor(T);
+        bg.fill(c.r, c.g, c.b, 95);
+        bg.circle(x, y, 1.4);
+      }
     }
 
     /* ──────────────────────────────────────────
@@ -363,54 +394,89 @@ function initSketch(containerEl) {
     ────────────────────────────────────────── */
     function _drawHRDiagram(s) {
       const hg = hrCanvas;
-      const HW = hg.width, HH = hg.height;
       hg.background(3, 10, 20, 245);
 
-      const T_min = 2800, T_max = 55000;
-      const L_min = 1e-4,  L_max = 1e7;
-      const toX = T => HW * 0.88 - (Math.log10(T) - Math.log10(T_min)) /
-                       (Math.log10(T_max) - Math.log10(T_min)) * HW * 0.78;
-      const toY = L => HH * 0.90 - (Math.log10(Math.max(L, L_min)) - Math.log10(L_min)) /
-                       (Math.log10(L_max) - Math.log10(L_min)) * HH * 0.82;
+      // ── Fondo: estrellas reales del catálogo Hipparcos ──
+      hg.image(hrBgCanvas, 0, 0);
 
-      // Secuencia principal de referencia
-      hg.stroke(25, 65, 115, 90); hg.strokeWeight(1.2); hg.noFill();
+      // ── Secuencia principal de referencia ──
+      hg.stroke(25, 65, 115, 80); hg.strokeWeight(1.2); hg.noFill();
       hg.beginShape();
       for (let M = 0.08; M <= 60; M *= 1.15) {
         const L_m = PHYSICS.luminosity(M);
         const R_m = PHYSICS.mainSequenceRadius(M);
         const T_m = PHYSICS.effectiveTemp(L_m, R_m);
-        hg.vertex(toX(T_m), toY(L_m));
+        hg.vertex(_hrX(T_m), _hrY(L_m));
       }
       hg.endShape();
 
-      // Trayectoria evolutiva
-      for (let i = 1; i < hrPoints.length; i++) {
-        const prev = hrPoints[i - 1], cur = hrPoints[i];
-        hg.stroke(cur.c.r, cur.c.g, cur.c.b, 100);
-        hg.strokeWeight(1);
-        hg.line(toX(prev.T), toY(prev.L), toX(cur.T), toY(cur.L));
+      // ── Trayectorias comparativas (si están activas) ──
+      const tracks = window.comparisonTracks;
+      if (window.comparisonMode && tracks) {
+        const TRACK_COLORS = [
+          [80,  160, 255],   // 1 M☉  → azul  (enana blanca)
+          [190, 120, 255],   // 8 M☉  → violeta (estrella de neutrones)
+          [255, 90,  90 ],   // 25 M☉ → rojo  (agujero negro)
+        ];
+        const TRACK_LABELS = ['1 M☉', '8 M☉', '25 M☉'];
+        tracks.forEach((pts, ti) => {
+          if (!pts || pts.length < 2) return;
+          const [r, g, b] = TRACK_COLORS[ti];
+          hg.strokeWeight(1.2);
+          for (let i = 1; i < pts.length; i++) {
+            const a = 55 + (i / pts.length) * 100;
+            hg.stroke(r, g, b, a);
+            hg.line(_hrX(pts[i-1].T), _hrY(pts[i-1].L),
+                    _hrX(pts[i  ].T), _hrY(pts[i  ].L));
+          }
+          // Etiqueta al final del track
+          const last = pts[pts.length - 1];
+          const lx = _hrX(last.T), ly = _hrY(last.L);
+          hg.noStroke(); hg.fill(r, g, b, 200);
+          hg.textSize(5.5); hg.textAlign(hg.LEFT);
+          hg.text(TRACK_LABELS[ti], Math.min(lx + 2, HR_W - 22), Math.max(ly, 7));
+          hg.noFill(); hg.stroke(r, g, b, 160); hg.strokeWeight(1);
+          hg.circle(lx, ly, 4);
+        });
       }
 
-      // Posición actual
+      // ── Trayectoria evolutiva con gradiente temporal ──
+      for (let i = 1; i < hrPoints.length; i++) {
+        const prev = hrPoints[i - 1], cur = hrPoints[i];
+        const ageFrac = i / hrPoints.length;
+        const alpha = 30 + ageFrac * 160;       // antigua=tenue, reciente=brillante
+        const wt    = 0.7 + ageFrac * 0.8;      // trazo más grueso al avanzar
+        hg.stroke(cur.c.r, cur.c.g, cur.c.b, alpha);
+        hg.strokeWeight(wt);
+        hg.line(_hrX(prev.T), _hrY(prev.L), _hrX(cur.T), _hrY(cur.L));
+      }
+
+      // ── Posición actual ──
       if (s.T > 0) {
-        const sx = toX(s.T), sy = toY(Math.max(s.L, L_min));
+        const sx = _hrX(s.T), sy = _hrY(Math.max(s.L, HR_L_MIN));
         const sc = PHYSICS.tempToColor(s.T);
         hg.noStroke(); hg.fill(sc.r, sc.g, sc.b, 55); hg.circle(sx, sy, 11);
         hg.fill(sc.r, sc.g, sc.b, 220);                hg.circle(sx, sy, 5);
         hg.fill(255, 255, 255, 200);                    hg.circle(sx, sy, 2);
       }
 
-      // Etiquetas de ejes
+      // ── Etiquetas de ejes ──
       hg.noStroke(); hg.textSize(6); hg.textAlign(hg.CENTER);
       hg.fill(45, 95, 145, 190);
-      hg.text('← T efectiva', HW * 0.5, HH - 1);
+      hg.text('← T efectiva', HR_W * 0.5, HR_H - 1);
       hg.textAlign(hg.LEFT); hg.text('L/L☉', 2, 8);
 
-      // Volcar al canvas principal
-      p.image(hrCanvas, 10, H - 185 - 10, 220, 175);
+      // ── Indicador "Hipparcos" cuando hay datos ──
+      if (window.HIPPARCOS_STARS) {
+        hg.textSize(5); hg.fill(30, 70, 110, 150);
+        hg.textAlign(hg.RIGHT);
+        hg.text('• Hipparcos ESA', HR_W - 2, HR_H - 1);
+      }
+
+      // ── Volcar al canvas principal ──
+      p.image(hrCanvas, 10, H - 185 - 10, HR_W, HR_H);
       p.noFill(); p.stroke(13, 48, 85); p.strokeWeight(1);
-      p.rect(10, H - 195, 220, 175, 3);
+      p.rect(10, H - 195, HR_W, HR_H, 3);
       p.noStroke(); p.fill(30, 100, 150); p.textSize(9); p.textAlign(p.LEFT);
       p.text('DIAGRAMA H-R', 16, H - 195 + 10);
     }
@@ -466,7 +532,9 @@ function initSketch(containerEl) {
     }
 
     /* ── API pública del sketch ───────────────── */
-    p.clearHRTrack = function() { hrPoints = []; };
+    p.clearHRTrack    = function() { hrPoints = []; };
+    p.getHRPoints     = function() { return hrPoints.map(pt => ({ T: pt.T, L: pt.L })); };
+    p.rebuildHRBg     = function() { _buildHipparcosBg(); };
 
   }, containerEl);
 }
