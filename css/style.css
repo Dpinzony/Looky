@@ -343,6 +343,29 @@ button.active {
 .guide-control-label { font-family: 'Orbitron', sans-serif; font-size: 0.52rem; color: #ffcc44; letter-spacing: 0.1em; margin-bottom: 5px; }
 .guide-control-desc { font-size: 0.56rem; color: #4a6a7a; line-height: 1.7; }
 
+/* ── Merger / Colisiones panel ───────────────── */
+#mergerPhaseInfo {
+  font-size: 0.56rem;
+  color: #5a8aaa;
+  line-height: 1.8;
+  margin: 6px 0;
+}
+#mergerLiveInfo {
+  font-size: 0.52rem;
+  color: #2a6a8a;
+  text-align: center;
+  min-height: 12px;
+  margin-top: 4px;
+}
+.merger-fact {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.55rem;
+  margin: 3px 0;
+}
+.merger-fact span:first-child { color: #4a7a8a; }
+.merger-fact span:last-child  { color: #a8d8ff; font-weight: bold; }
+
 /* ── Guide: lista de simulaciones ───────────── */
 .guide-sim-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
 .guide-sim-group { background: rgba(5,12,25,0.85); border: 1px solid #0d3055; border-radius: 4px; padding: 12px; }

@@ -31,9 +31,13 @@
       <button id="btn-tab-2d" class="tab-btn active" onclick="switchViewMode('2d')">🎨 Evolución 2D</button>
       <button id="btn-tab-3d" class="tab-btn" onclick="switchViewMode('3d')">🌌 Laboratorio 3D</button>
       <button id="btn-tab-guide" class="tab-btn" onclick="switchViewMode('guide')">📖 Guía</button>
+      <button id="btn-tab-merger" class="tab-btn" onclick="switchViewMode('merger')">💥 Colisiones</button>
     </div>
     <div id="canvas-2d-view" class="view-content active"></div>
     <div id="canvas-3d-view" class="view-content"></div>
+
+    <!-- ── Colisiones / Kilonova ────────────────── -->
+    <div id="canvas-merger-view" class="view-content"></div>
 
     <!-- ── Guía Educativa ─────────────────────── -->
     <div id="canvas-guide-view" class="view-content">
@@ -474,6 +478,30 @@
       <div id="probeStatus" style="font-size:0.52rem; color:#88ccff; margin-top:5px; text-align:center; min-height:12px;">Sonda lista.</div>
     </div>
 
+    <!-- Panel Colisiones GW170817 (visible solo en modo merger) -->
+    <div class="panel" id="panel-merger" style="display:none;">
+      <div class="panel-title">💥 Fusión GW170817</div>
+
+      <div class="merger-fact"><span>Fecha</span><span>17 ago 2017</span></div>
+      <div class="merger-fact"><span>Detectores</span><span>LIGO + Virgo</span></div>
+      <div class="merger-fact"><span>Galaxia</span><span>NGC 4993</span></div>
+      <div class="merger-fact"><span>Distancia</span><span>~130 Mly</span></div>
+      <div class="merger-fact"><span>M₁</span><span>~1.36 M☉</span></div>
+      <div class="merger-fact"><span>M₂</span><span>~1.17 M☉</span></div>
+      <div class="merger-fact"><span>E<sub>GW</sub></span><span>~0.05 M☉c²</span></div>
+
+      <div class="separator"></div>
+
+      <div id="mergerPhaseInfo">Iniciando simulación…</div>
+      <div id="mergerLiveInfo"></div>
+
+      <div class="separator"></div>
+
+      <div class="btn-row">
+        <button onclick="restartMerger()">↺ Reiniciar</button>
+      </div>
+    </div>
+
     <!-- Parámetros estelares -->
     <div class="panel">
       <div class="panel-title">★ Parámetros Estelares</div>
@@ -586,6 +614,7 @@
 <!-- ── Módulos JS (orden de dependencias) ──── -->
 <script src="js/hipparcos.js"></script>
 <script src="js/physics.js"></script>
+<script src="js/merger.js"></script>
 <script src="js/particles.js"></script>
 <script src="js/star.js"></script>
 <script src="js/renderer.js"></script>

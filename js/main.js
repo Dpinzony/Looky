@@ -233,15 +233,18 @@ function switchViewMode(mode) {
   document.getElementById('btn-tab-2d').classList.toggle('active', mode === '2d');
   document.getElementById('btn-tab-3d').classList.toggle('active', mode === '3d');
   document.getElementById('btn-tab-guide').classList.toggle('active', mode === 'guide');
+  document.getElementById('btn-tab-merger').classList.toggle('active', mode === 'merger');
 
   // Cambiar visibilidad de las capas de canvas
   document.getElementById('canvas-2d-view').classList.toggle('active', mode === '2d');
   document.getElementById('canvas-3d-view').classList.toggle('active', mode === '3d');
   document.getElementById('canvas-guide-view').classList.toggle('active', mode === 'guide');
+  document.getElementById('canvas-merger-view').classList.toggle('active', mode === 'merger');
 
   // Mostrar/ocultar paneles en el sidebar
-  document.getElementById('panel-2d').style.display = mode === '2d' ? 'block' : 'none';
-  document.getElementById('panel-3d').style.display = mode === '3d' ? 'block' : 'none';
+  document.getElementById('panel-2d').style.display     = mode === '2d'     ? 'block' : 'none';
+  document.getElementById('panel-3d').style.display     = mode === '3d'     ? 'block' : 'none';
+  document.getElementById('panel-merger').style.display = mode === 'merger' ? 'block' : 'none';
 
   // Redimensionar el canvas correspondiente para asegurar que se dibuje bien
   if (mode === '2d' && window._p5Sketch) {
@@ -249,7 +252,13 @@ function switchViewMode(mode) {
   } else if (mode === '3d' && window._p5Sketch3D) {
     window._p5Sketch3D.triggerResize?.();
     syncStarTo3D();
+  } else if (mode === 'merger' && window._p5Merger) {
+    window._p5Merger.triggerResize?.();
   }
+}
+
+function restartMerger() {
+  if (window._p5Merger) window._p5Merger.restartMerger();
 }
 
 function syncStarTo3D() {
@@ -411,6 +420,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const container3D = document.getElementById('canvas-3d-view');
   initSketch3D(container3D);
+
+  const containerMerger = document.getElementById('canvas-merger-view');
+  initSketchMerger(containerMerger);
 
   /* Arrancar bucle de simulación */
   simLoop();
