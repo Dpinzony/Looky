@@ -14,6 +14,25 @@ let animFrameId = null;
 let currentViewMode = '2d';
 let hasAutoSwitched = false;
 
+/* ── Buffer de exportación (SCRUM-14) ─────────── */
+const SIM_EXPORT_INTERVAL = 120; // acumular cada N pasos de evolución
+let   simExportCounter    = 0;
+let   simHistory          = [];   // snapshots para CSV
+
+function _recordSnapshot(s) {
+  simHistory.push({
+    age_yr  : s.age,
+    phase   : s.phase,
+    R_Rsun  : s.R,
+    L_Lsun  : s.L,
+    T_K     : s.T,
+    M_Msun  : s.M,
+    H_frac  : s.H_frac,
+    He_frac : s.He_frac,
+    C_frac  : s.C_frac,
+  });
+}
+
 /* ── Paso de simulación por frame ────────────── */
 // Con simSpeed=8 se ven ~8× más rápido las fases
 function simLoop() {
@@ -23,6 +42,11 @@ function simLoop() {
 
     for (let i = 0; i < simSpeed; i++) {
       evolveStep(s, dt);
+      simExportCounter++;
+      if (simExportCounter >= SIM_EXPORT_INTERVAL) {
+        simExportCounter = 0;
+        _recordSnapshot(s);
+      }
     }
 
     // Nebulosa: spawnear partículas en esa fase
@@ -46,8 +70,9 @@ function resetStar() {
   const M = parseFloat(document.getElementById('massSlider').value);
   window.star = createStar(M);
   PARTICLES.clear();
-  // Limpiar trayectoria H-R si el sketch ya existe
   if (window._p5Sketch) window._p5Sketch.clearHRTrack?.();
+  simHistory = [];
+  simExportCounter = 0;
   hasAutoSwitched = false;
   switchViewMode('2d');
   updateUI(window.star);
@@ -238,6 +263,72 @@ function trigger3DSupernova() {
   if (window._p5Sketch3D) {
     window._p5Sketch3D.triggerSupernova();
   }
+}
+
+/* ──────────────────────────────────────────────
+   EXPORTACIÓN (SCRUM-14)
+────────────────────────────────────────────── */
+function _triggerDownload(content, filename, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV() {
+  const s = window.star;
+  if (!s) return;
+  if (simHistory.length === 0) {
+    alert('Aún no hay datos acumulados. Deja correr la simulación unos segundos.');
+    return;
+  }
+
+  const meta = [
+    `# Looky — Simulación de Evolución Estelar`,
+    `# masa_inicial_Msun=${s.M_initial}`,
+    `# destino_final=${s.fate}`,
+    `# tau_MS_yr=${s.tauMS.toExponential(4)}`,
+    `# exportado=${new Date().toISOString()}`,
+  ].join('\n');
+
+  const header = 'age_yr,phase,R_Rsun,L_Lsun,T_K,M_Msun,H_frac,He_frac,C_frac';
+  const rows   = simHistory.map(r =>
+    [r.age_yr.toExponential(6), r.phase,
+     r.R_Rsun.toFixed(6), r.L_Lsun.toExponential(6), Math.round(r.T_K),
+     r.M_Msun.toFixed(6), r.H_frac.toFixed(4), r.He_frac.toFixed(4), r.C_frac.toFixed(4)
+    ].join(',')
+  );
+
+  const csv = [meta, header, ...rows].join('\n');
+  _triggerDownload(csv, `looky_simulacion_${s.M_initial}Msun.csv`, 'text/csv');
+}
+
+function exportJSON() {
+  const s = window.star;
+  if (!s) return;
+
+  const hrPoints = window._p5Sketch?.getHRPoints?.() ?? [];
+
+  const payload = {
+    metadata: {
+      proyecto       : 'Looky — Simulador de Evolución Estelar',
+      masa_inicial   : s.M_initial,
+      destino_final  : s.fate,
+      tau_MS_yr      : s.tauMS,
+      exportado      : new Date().toISOString(),
+    },
+    trayectoria_hr: hrPoints.map(pt => ({
+      T_K   : Math.round(pt.T),
+      L_Lsun: parseFloat(pt.L.toExponential(6)),
+    })),
+    historial_simulacion: simHistory,
+  };
+
+  _triggerDownload(JSON.stringify(payload, null, 2),
+    `looky_hr_${s.M_initial}Msun.json`, 'application/json');
 }
 
 /* ──────────────────────────────────────────────

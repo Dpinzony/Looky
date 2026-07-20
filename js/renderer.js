@@ -466,7 +466,8 @@ function initSketch(containerEl) {
     }
 
     /* ── API pública del sketch ───────────────── */
-    p.clearHRTrack = function() { hrPoints = []; };
+    p.clearHRTrack  = function() { hrPoints = []; };
+    p.getHRPoints   = function() { return hrPoints.map(pt => ({ T: pt.T, L: pt.L })); };
 
   }, containerEl);
 }
