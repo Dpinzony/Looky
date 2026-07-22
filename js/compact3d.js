@@ -938,7 +938,7 @@ function initSketch3D(containerEl) {
       // Esfera negra pura absorbente
       p.ambientMaterial(0, 0, 0);
       p.emissiveMaterial(0, 0, 0);
-      p.sphere(r_plus);
+      p.sphere(rs_radius);
       p.pop();
 
       // ── Lente Gravitacional (Warped Accretion Disk) ──
@@ -948,12 +948,12 @@ function initSketch3D(containerEl) {
       // 1. Disco Plano Ecuatorial (Normal)
       p.push();
       p.rotateX(p.HALF_PI); // Dibujar en plano XZ
-      _drawDiskGeometry(innerDisk, outerDisk, 0.02, rs_radius, spinA);
+      _drawDiskGeometry(innerDisk, outerDisk, 0.02, rs_radius, GR.spinA);
       p.pop();
 
       // Ergoesfera para BH de Kerr (visualización del frame dragging)
       if (lensing) {
-        _drawErgosphere(rs_radius, spinA);
+        _drawErgosphere(rs_radius, GR.spinA);
       }
 
       // 2. Anillos Curvados por Lente (Efecto Gargantua)
@@ -1114,7 +1114,7 @@ function initSketch3D(containerEl) {
       }
     }
 
-    function _drawDiskGeometry(inner, outer, speed) {
+    function _drawDiskGeometry(inner, outer, speed, rsRadius, spinA) {
       p.push();
       p.rotateZ(p.frameCount * speed);
 
