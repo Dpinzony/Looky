@@ -270,15 +270,6 @@ function initSketch3D(containerEl) {
       const crossSection = checkCrossSectionEl ? checkCrossSectionEl.checked : false;
       const lensing = checkLensingEl ? checkLensingEl.checked : true;
 
-      const rsForLensing = remnantType === 'black_hole' ? 12 * remnantMass : 0;
-
-      // Cuadrícula de espacio-tiempo deformada alrededor del BH
-      if (rsForLensing > 0) {
-        _drawWarpedGrid(rsForLensing);
-      }
-
-      // Dibujar estrellas lejanas de fondo en 3D (con lente simplificada si aplica)
-      _draw3DBGStars(lensing && rsForLensing > 0, rsForLensing);
       // Animación tomografía: avanza al activar, retrocede al desactivar
       if (crossSection && !prevCrossSection) tovRevealProgress = 0;
       if (crossSection)  tovRevealProgress = Math.min(1, tovRevealProgress + 0.018);
@@ -936,9 +927,6 @@ function initSketch3D(containerEl) {
       // Horizonte de Sucesos: Radio de Schwarzschild Rs = 2GM/c^2
       // Escalado visual de Rs proporcional a la masa del remanente
       const rs_radius = 12 * remnantMass;
-      const spinA = GR.spinA;
-
-      const r_plus = 0.5 * rs_radius * (1 + Math.sqrt(Math.max(0, 1 - spinA * spinA)));
 
       if (crossSection && tovRevealProgress > 0) {
         _drawBlackHolePenrose(rs_radius, lensing);
@@ -1024,7 +1012,6 @@ function initSketch3D(containerEl) {
        ────────────────────────────────────────── */
     function _drawBlackHolePenrose(rs_radius, lensing) {
       const rev = tovRevealProgress;
-      const spinA = GR.spinA;
 
       // Radios físicos clave (escalados visualmente)
       const r_sing  = rs_radius * 0.04;          // Singularidad (puntual, visual = pequeña)
@@ -1097,7 +1084,7 @@ function initSketch3D(containerEl) {
       if (lensing) {
         const innerDisk = r_eh * 1.5;
         const outerDisk = r_eh * 4.2;
-        p.push(); p.rotateX(p.HALF_PI); _drawDiskGeometry(innerDisk, outerDisk, 0.02, rs_radius, GR.spinA); p.pop();
+        p.push(); p.rotateX(p.HALF_PI); _drawDiskGeometry(innerDisk, outerDisk, 0.02); p.pop();
       }
 
       // Etiquetas
@@ -1127,7 +1114,7 @@ function initSketch3D(containerEl) {
       }
     }
 
-   function _drawDiskGeometry(inner, outer, speed, rsRadius, spinA) {
+    function _drawDiskGeometry(inner, outer, speed) {
       p.push();
       p.rotateZ(p.frameCount * speed);
 

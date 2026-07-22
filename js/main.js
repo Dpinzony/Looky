@@ -99,6 +99,120 @@ function _computeCompTrack(mass) {
   return pts;
 }
 
+/* ══════════════════════════════════════════════
+   MODO "⚖ Comparar" — hasta 3 estrellas evolucionando
+   en paralelo, cada una con su propia máquina de
+   estados independiente (createStar/evolveStep de
+   star.js), su propio mini-canvas 2D y su propia
+   trayectoria en el H-R compartido.
+   ══════════════════════════════════════════════ */
+const COMPARE_DEFAULT_MASSES = [0.5, 8, 25];
+const COMPARE_TRACK_COLORS   = ['#58a0ff', '#cc88ff', '#ff5a5a'];
+
+window.compareStars  = [null, null, null];
+window.compareTracks = [[], [], []];
+let compareInitialized  = false;
+let compareFrameCounter = 0;
+
+function initCompareMode() {
+  if (compareInitialized) return;
+  compareInitialized = true;
+
+  const container = document.getElementById('compareColumns');
+  container.innerHTML = COMPARE_DEFAULT_MASSES.map((m, i) => `
+    <div class="compare-column">
+      <div class="compare-mass-label">M<sub>ZAMS</sub> = <span id="compareMassLabel${i}">${m.toFixed(1)}</span> M☉</div>
+      <input type="range" class="compare-mass-slider" id="compareMassSlider${i}" min="0.1" max="40" step="0.1" value="${m}">
+      <div class="compare-canvas-wrap"><canvas id="compareCanvas${i}" width="130" height="130"></canvas></div>
+      <div class="compare-phase-badge" id="comparePhaseBadge${i}">—</div>
+      <div class="compare-readouts">
+        <div class="compare-readout-row"><span>Edad</span><span id="compareAge${i}">t = 0 yr</span></div>
+        <div class="compare-readout-row"><span>Radio</span><span id="compareRadius${i}">—</span></div>
+        <div class="compare-readout-row"><span>Luminosidad</span><span id="compareLum${i}">—</span></div>
+        <div class="compare-readout-row"><span>T superficie</span><span id="compareTemp${i}">—</span></div>
+        <div class="compare-readout-row"><span>Destino</span><span id="compareFate${i}">—</span></div>
+      </div>
+    </div>
+  `).join('');
+
+  COMPARE_DEFAULT_MASSES.forEach((m, i) => {
+    document.getElementById(`compareMassSlider${i}`).addEventListener('input', function() {
+      document.getElementById(`compareMassLabel${i}`).textContent = parseFloat(this.value).toFixed(1);
+    });
+  });
+
+  syncCompareStars();
+}
+
+/* Botón "🔄 Sincronizar": recrea las 3 estrellas a la vez
+   (mismo instante t=0, fase Protoestrella) con la masa
+   actual de cada slider. */
+function syncCompareStars() {
+  for (let i = 0; i < 3; i++) {
+    const slider = document.getElementById(`compareMassSlider${i}`);
+    const M = slider ? parseFloat(slider.value) : COMPARE_DEFAULT_MASSES[i];
+    window.compareStars[i]  = createStar(M);
+    window.compareTracks[i] = [];
+  }
+  compareFrameCounter = 0;
+  renderCompareFrame();
+}
+
+/* Avanza las 3 simulaciones un frame (solo si la pestaña
+   Comparar está activa) y repinta. Se llama desde simLoop(). */
+function compareTick() {
+  if (currentViewMode !== 'compare') return;
+  if (!window.compareStars[0]) return;
+
+  compareFrameCounter++;
+
+  for (let i = 0; i < 3; i++) {
+    const s = window.compareStars[i];
+    if (!s) continue;
+    const dt = getSimulationStep(s);
+    for (let k = 0; k < simSpeed; k++) evolveStep(s, dt);
+
+    if (compareFrameCounter % 4 === 0 && s.T > 0) {
+      window.compareTracks[i].push({ T: s.T, L: s.L });
+      if (window.compareTracks[i].length > 400) window.compareTracks[i].shift();
+    }
+  }
+
+  renderCompareFrame();
+}
+
+function renderCompareFrame() {
+  for (let i = 0; i < 3; i++) {
+    const s = window.compareStars[i];
+    const canvas = document.getElementById(`compareCanvas${i}`);
+    if (canvas) drawCompareStar(canvas.getContext('2d'), canvas.width, canvas.height, s);
+    if (!s) continue;
+
+    const meta  = PHASE_META[s.phase] || { name: s.phase };
+    const color = PHASE_ACCENT[s.phase] || '#4a9acc';
+    const badge = document.getElementById(`comparePhaseBadge${i}`);
+    if (badge) {
+      badge.textContent    = meta.name;
+      badge.style.background = color + '22';
+      badge.style.color      = color;
+      badge.style.border     = `1px solid ${color}`;
+    }
+
+    _set(`compareAge${i}`,    `t = ${formatAge(s.age)}`);
+    _set(`compareRadius${i}`, `${s.R.toFixed(s.R > 100 ? 0 : s.R > 1 ? 2 : 5)} R☉`);
+    _set(`compareLum${i}`,    s.L > 1e5 ? `${s.L.toExponential(2)} L☉` : `${s.L.toFixed(2)} L☉`);
+    _set(`compareTemp${i}`,   s.T > 0 ? `${Math.round(s.T).toLocaleString()} K` : '—');
+    _set(`compareFate${i}`,   s.fate === 'white_dwarf' ? 'Enana Blanca' :
+                               s.fate === 'neutron_star' ? 'Estrella de Neutrones' : 'Agujero Negro');
+  }
+
+  const hrCanvas = document.getElementById('compareHRCanvas');
+  if (hrCanvas) {
+    drawCompareHR(hrCanvas.getContext('2d'), hrCanvas.width, hrCanvas.height,
+                  window.compareTracks, COMPARE_TRACK_COLORS);
+  }
+}
+
 /* ── Buffer de exportación (SCRUM-14) ─────────── */
 const SIM_EXPORT_INTERVAL = 120; // acumular cada N pasos de evolución
 let   simExportCounter    = 0;
@@ -145,6 +259,7 @@ function simLoop() {
 
     updateUI(s);
   }
+  compareTick();
   animFrameId = requestAnimationFrame(simLoop);
 }
 
@@ -270,11 +385,66 @@ function updateUI(s) {
   /* Ecuaciones activas */
   document.getElementById('equationInfo').innerHTML =
     PHASE_EQUATIONS[s.phase] || '';
+
+  /* Si el panel educativo está abierto, refrescarlo cuando cambie de fase */
+  const drawerEl = document.getElementById('phaseDrawer');
+  if (drawerEl && drawerEl.classList.contains('active') && s.phase !== window._drawerLastPhase) {
+    window._drawerLastPhase = s.phase;
+    renderPhaseDrawer(s.phase);
+  }
 }
 
 function _set(id, val) {
   const el = document.getElementById(id);
   if (el) el.textContent = val;
+}
+
+/* ══════════════════════════════════════════════
+   PANEL EDUCATIVO DE FASE — apertura / cierre
+   ══════════════════════════════════════════════ */
+function renderPhaseDrawer(phase) {
+  const meta = PHASE_META[phase] || { name: phase };
+  const info = PHASE_INFO[phase];
+  if (!info) return;
+
+  const accent = PHASE_ACCENT[phase] || '#4a9acc';
+  document.getElementById('phaseDrawer').style.setProperty('--accent', accent);
+
+  document.getElementById('drawerPhaseBadge').textContent = `Fase actual`;
+  document.getElementById('drawerTitle').textContent = meta.name;
+  document.getElementById('drawerExplanation').textContent = info.explanation;
+  document.getElementById('drawerDiagram').innerHTML = info.svg;
+
+  document.getElementById('drawerEquations').innerHTML = info.equations.map(eq => `
+    <div class="drawer-eq-item">
+      <div class="drawer-eq-formula">${eq.formula}</div>
+      <div class="drawer-eq-desc">${eq.description}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('drawerRealValues').innerHTML = info.realValues.map(v => `<li>${v}</li>`).join('');
+
+  document.getElementById('drawerComparisons').innerHTML = info.comparisons.map(c => `
+    <div class="comparison-card">
+      <div class="comparison-name">${c.name}</div>
+      <div class="comparison-blurb">${c.blurb}</div>
+    </div>
+  `).join('');
+}
+
+function openPhaseDrawer() {
+  if (!window.star) return;
+  window._drawerLastPhase = window.star.phase;
+  renderPhaseDrawer(window.star.phase);
+  document.getElementById('phaseDrawer').classList.add('active');
+  document.getElementById('phaseDrawer').setAttribute('aria-hidden', 'false');
+  document.getElementById('phaseDrawerOverlay').classList.add('active');
+}
+
+function closePhaseDrawer() {
+  document.getElementById('phaseDrawer').classList.remove('active');
+  document.getElementById('phaseDrawer').setAttribute('aria-hidden', 'true');
+  document.getElementById('phaseDrawerOverlay').classList.remove('active');
 }
 
 /* ── Integración de Vistas 2D / 3D ──────────────── */
@@ -297,6 +467,9 @@ function switchViewMode(mode) {
   document.getElementById('panel-2d').style.display     = mode === '2d'     ? 'block' : 'none';
   document.getElementById('panel-3d').style.display     = mode === '3d'     ? 'block' : 'none';
   document.getElementById('panel-merger').style.display = mode === 'merger' ? 'block' : 'none';
+
+  // Inicializar de forma perezosa la pestaña Comparar la primera vez que se visita
+  if (mode === 'compare') initCompareMode();
 
   // Redimensionar el canvas correspondiente para asegurar que se dibuje bien
   if (mode === '2d' && window._p5Sketch) {
@@ -467,6 +640,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window._p5Sketch3D) {
       window._p5Sketch3D.setRemnantMass(val);
     }
+  });
+
+  /* Panel educativo de fase */
+  document.getElementById('phaseIndicator').addEventListener('click', openPhaseDrawer);
+  document.getElementById('phaseDrawerClose').addEventListener('click', closePhaseDrawer);
+  document.getElementById('phaseDrawerOverlay').addEventListener('click', closePhaseDrawer);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePhaseDrawer();
   });
 
   /* Iniciar estrella y sketchs */

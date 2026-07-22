@@ -538,3 +538,147 @@ function initSketch(containerEl) {
 
   }, containerEl);
 }
+
+/**
+ * ══════════════════════════════════════════════
+ * Vista "⚖ Comparar" — dibujo en Canvas2D plano
+ * ─────────────────────────────────────────────
+ * A diferencia del resto de este archivo, estas dos
+ * funciones NO usan p5.js: se llaman directamente
+ * sobre el contexto 2D de <canvas> nativos, una vez
+ * por frame, para cada una de las 3 estrellas del
+ * modo de comparación (ver main.js: compareTick()).
+ * Mantenerlas fuera de p5 evita instanciar 3 sketches
+ * adicionales solo para una vista de mini-comparación.
+ * ══════════════════════════════════════════════
+ */
+
+/**
+ * Dibuja una representación simplificada de una estrella
+ * (o remanente compacto) en un <canvas> 2D nativo.
+ */
+function drawCompareStar(ctx, w, h, star) {
+  ctx.clearRect(0, 0, w, h);
+  if (!star) return;
+  const cx = w / 2, cy = h / 2;
+  const phase = star.phase;
+
+  if (phase === 'black_hole') {
+    // Disco de acreción + horizonte de sucesos
+    ctx.strokeStyle = 'rgba(255,170,68,0.85)';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, w * 0.34, h * 0.10, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#01050a';
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.min(w, h) * 0.15, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#ff44aa';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    return;
+  }
+
+  if (phase === 'neutron_star') {
+    const c = PHYSICS.tempToColor(star.T || 20000);
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 14);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(1, `rgb(${c.r},${c.g},${c.b})`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    // Haces de radiación (efecto faro)
+    ctx.strokeStyle = 'rgba(204,136,255,0.55)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx - w * 0.4, cy - h * 0.4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + w * 0.4, cy + h * 0.4); ctx.stroke();
+    return;
+  }
+
+  // Estrella "normal": protoestrella … enana blanca, esfera coloreada por temperatura
+  const c = PHYSICS.tempToColor(star.T || 5778);
+  const R = Math.max(star.R || 1, 0.0005);
+  let radiusPx = 10 + (Math.log10(R) + 3) * 9; // log10(R) ∈ [-3, 3.3] aprox → [10, ~65] px
+  radiusPx = Math.max(6, Math.min(radiusPx, Math.min(w, h) * 0.42));
+
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radiusPx);
+  grad.addColorStop(0,    'rgba(255,255,255,0.95)');
+  grad.addColorStop(0.35, `rgb(${c.r},${c.g},${c.b})`);
+  grad.addColorStop(1,    `rgba(${c.r},${c.g},${c.b},0.15)`);
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radiusPx, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * Dibuja el mini diagrama H-R compartido del modo comparación,
+ * con hasta 3 trayectorias en colores distintos.
+ * tracks: [[{T,L}, ...], [{T,L}, ...], [{T,L}, ...]]
+ * colors: ['#rrggbb', '#rrggbb', '#rrggbb']
+ */
+function drawCompareHR(ctx, w, h, tracks, colors) {
+  ctx.clearRect(0, 0, w, h);
+
+  const T_MIN = 2800, T_MAX = 55000;
+  const L_MIN = 1e-4, L_MAX = 1e7;
+  const padL = 34, padR = 12, padT = 10, padB = 22;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+
+  const hx = T => padL + plotW - (Math.log10(T) - Math.log10(T_MIN)) /
+                  (Math.log10(T_MAX) - Math.log10(T_MIN)) * plotW;
+  const hy = L => padT + plotH - (Math.log10(Math.max(L, L_MIN)) - Math.log10(L_MIN)) /
+                  (Math.log10(L_MAX) - Math.log10(L_MIN)) * plotH;
+
+  // Ejes
+  ctx.strokeStyle = '#0d3055';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, padT); ctx.lineTo(padL, h - padB); ctx.lineTo(w - padR, h - padB);
+  ctx.stroke();
+  ctx.fillStyle = '#4a7a9a';
+  ctx.font = '10px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('← T efectiva (K)', w / 2, h - 6);
+  ctx.save();
+  ctx.translate(12, h / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Luminosidad (L☉) →', 0, 0);
+  ctx.restore();
+
+  // Secuencia principal de referencia (curva tenue de fondo)
+  ctx.strokeStyle = 'rgba(25,65,115,0.45)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  let first = true;
+  for (let M = 0.08; M <= 60; M *= 1.15) {
+    const Lm = PHYSICS.luminosity(M);
+    const Rm = PHYSICS.mainSequenceRadius(M);
+    const Tm = PHYSICS.effectiveTemp(Lm, Rm);
+    const x = hx(Tm), y = hy(Lm);
+    if (first) { ctx.moveTo(x, y); first = false; } else { ctx.lineTo(x, y); }
+  }
+  ctx.stroke();
+
+  // Trayectorias de las 3 estrellas en comparación
+  tracks.forEach((pts, i) => {
+    if (!pts || pts.length < 2) return;
+    ctx.strokeStyle = colors[i];
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    pts.forEach((pt, j) => {
+      const x = hx(pt.T), y = hy(pt.L);
+      if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Punto de posición actual
+    const last = pts[pts.length - 1];
+    ctx.fillStyle = colors[i];
+    ctx.beginPath();
+    ctx.arc(hx(last.T), hy(last.L), 3.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
