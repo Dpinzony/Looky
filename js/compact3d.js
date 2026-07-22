@@ -10,6 +10,9 @@
 function initSketch3D(containerEl) {
   window._p5Sketch3D = new p5(function(p) {
 
+    // ── Fuente WEBGL ────────────────────────────
+    let _font3D;
+
     // ── Variables de Estado Físico ─────────────
     let remnantMass = 1.40; // M_sun
     let remnantType = 'white_dwarf'; // 'white_dwarf' | 'neutron_star' | 'black_hole'
@@ -50,6 +53,15 @@ function initSketch3D(containerEl) {
     };
 
     /* ──────────────────────────────────────────
+       PRELOAD
+       ────────────────────────────────────────── */
+    p.preload = function() {
+      _font3D = p.loadFont(
+        'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/sharetechmono/ShareTechMono-Regular.ttf'
+      );
+    };
+
+    /* ──────────────────────────────────────────
        SETUP
        ────────────────────────────────────────── */
     p.setup = function() {
@@ -63,6 +75,7 @@ function initSketch3D(containerEl) {
       
       p.colorMode(p.RGB, 255);
       p.noStroke();
+      if (_font3D) p.textFont(_font3D);
     };
 
     p.windowResized = function() {
@@ -420,6 +433,11 @@ function initSketch3D(containerEl) {
       p.pop();
     }
 
+    function _label(txt, x, y, z) {
+      if (_font3D) p.textFont(_font3D);
+      p.text(txt, x, y, z !== undefined ? z : 0);
+    }
+
     function _gravitationalRedshiftFactor(r, rsRadius) {
       if (rsRadius <= 0) return 1;
       if (r <= rsRadius * 1.02) return 0.18;
@@ -604,24 +622,24 @@ function initSketch3D(containerEl) {
         p.push();
         p.fill(210, 195, 120, labelAlpha); p.noStroke();
         p.textSize(5); p.textAlign(p.LEFT, p.CENTER);
-        p.translate(r_env + 4, 0, 0); p.text('Envoltura He/H', 0, 0);
+        p.translate(r_env + 4, 0, 0); _label('Envoltura He/H', 0, 0);
         p.pop();
         p.push();
         p.fill(160, 180, 255, labelAlpha); p.noStroke();
         p.textSize(5); p.textAlign(p.LEFT, p.CENTER);
-        p.translate(r_semi + 4, -r_semi * 0.3, 0); p.text('Zona semi-degen.', 0, 0);
+        p.translate(r_semi + 4, -r_semi * 0.3, 0); _label('Zona semi-degen.', 0, 0);
         p.pop();
         p.push();
         p.fill(100, 160, 255, labelAlpha); p.noStroke();
         p.textSize(5); p.textAlign(p.LEFT, p.CENTER);
-        p.translate(r_nonRel + 4, -r_nonRel * 0.6, 0); p.text('Gas e⁻ degen. (P∝ρ⁵/³)', 0, 0);
+        p.translate(r_nonRel + 4, -r_nonRel * 0.6, 0); _label('Gas e- degen. (P prop. rho^5/3)', 0, 0);
         p.pop();
         p.push();
         const lc = isUltraRel ? [255,80,80] : [200,200,255];
         p.fill(lc[0], lc[1], lc[2], labelAlpha); p.noStroke();
         p.textSize(5); p.textAlign(p.LEFT, p.CENTER);
         p.translate(r_core + 4, -r_core * 0.9, 0);
-        p.text(isUltraRel ? 'Núcleo ultra-rel. (P∝ρ⁴/³)' : 'Núcleo C/O degen.', 0, 0);
+        _label(isUltraRel ? 'Nucleo ultra-rel. (P prop. rho^4/3)' : 'Nucleo C/O degen.', 0, 0);
         p.pop();
       }
     }
@@ -641,7 +659,7 @@ function initSketch3D(containerEl) {
       p.fill(180, 180, 180, alpha);
       p.textAlign(p.LEFT, p.CENTER);
       p.translate(startX, -baseY - 8, 0);
-      p.text('P(r)  ρ(r)', 0, 0);
+      _label('P(r)  rho(r)', 0, 0);
       p.pop();
 
       for (let i = 0; i < nBars; i++) {
@@ -860,7 +878,7 @@ function initSketch3D(containerEl) {
           p.fill(c[0], c[1], c[2], la);
           p.textAlign(p.LEFT, p.CENTER);
           p.translate(rx, -r_ns * fy, 0);
-          p.text(txt, 0, 0);
+          _label(txt, 0, 0);
           p.pop();
         }
       }
@@ -879,7 +897,7 @@ function initSketch3D(containerEl) {
       p.push();
       p.fill(200, 200, 200, alpha); p.noStroke();
       p.textSize(4.5); p.textAlign(p.LEFT, p.CENTER);
-      p.translate(startX, -baseY - 10, 0); p.text('Perfil TOV: P(r)  ρ(r)', 0, 0);
+      p.translate(startX, -baseY - 10, 0); _label('Perfil TOV: P(r)  rho(r)', 0, 0);
       p.pop();
 
       for (let i = 0; i < nBars; i++) {
@@ -911,12 +929,12 @@ function initSketch3D(containerEl) {
       p.push();
       p.fill(255, 140, 40, alpha); p.noStroke();
       p.textSize(4); p.textAlign(p.LEFT, p.CENTER);
-      p.translate(startX, baseY + 6, 0); p.text('─ P(r)', 0, 0);
+      p.translate(startX, baseY + 6, 0); _label('- P(r)', 0, 0);
       p.pop();
       p.push();
       p.fill(0, 210, 190, alpha); p.noStroke();
       p.textSize(4); p.textAlign(p.LEFT, p.CENTER);
-      p.translate(startX, -baseY - barMaxH - 8, 0); p.text('─ ρ(r)', 0, 0);
+      p.translate(startX, -baseY - barMaxH - 8, 0); _label('- rho(r)', 0, 0);
       p.pop();
     }
 
@@ -1101,7 +1119,7 @@ function initSketch3D(containerEl) {
           p.fill(c[0], c[1], c[2], la);
           p.textAlign(p.LEFT, p.CENTER);
           p.translate(rx, -r_isco * fy, 0);
-          p.text(txt, 0, 0);
+          _label(txt, 0, 0);
           p.pop();
         }
         // Singularidad
@@ -1109,7 +1127,7 @@ function initSketch3D(containerEl) {
         p.fill(255, 255, 255, la); p.textAlign(p.LEFT, p.CENTER);
         p.textSize(5);
         p.translate(r_sing + 3, -r_sing - 5, 0);
-        p.text('Singularidad (ρ→∞)', 0, 0);
+        _label('Singularidad (rho->inf)', 0, 0);
         p.pop();
       }
     }

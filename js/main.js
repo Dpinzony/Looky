@@ -756,10 +756,6 @@ function updateUI(s) {
   const compactPhases = [PHASES.WHITE_DWARF, PHASES.NEUTRON_STAR, PHASES.BLACK_HOLE];
   const compPanel = document.getElementById('compactPanel');
   if (compactPhases.includes(s.phase)) {
-    if (!hasAutoSwitched) {
-      hasAutoSwitched = true;
-      if (currentViewMode === '2d') switchViewMode('3d');
-    }
     compPanel.style.display = 'block';
     const titles = {
       white_dwarf:  '◽ Enana Blanca',
