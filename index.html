@@ -32,6 +32,7 @@
       <button id="btn-tab-3d" class="tab-btn" onclick="switchViewMode('3d')">🌌 Laboratorio 3D</button>
       <button id="btn-tab-guide" class="tab-btn" onclick="switchViewMode('guide')">📖 Guía</button>
       <button id="btn-tab-merger" class="tab-btn" onclick="switchViewMode('merger')">💥 Colisiones</button>
+      <button id="btn-tab-compare" class="tab-btn" onclick="switchViewMode('compare')">⚖ Comparación de estrellas</button>
     </div>
     <div id="canvas-2d-view" class="view-content active"></div>
     <div id="canvas-3d-view" class="view-content"></div>
@@ -44,6 +45,28 @@
       </div>
       <div id="canvas-kilonova-inner"></div>
       <div id="canvas-tde-inner" style="display:none;"></div>
+    </div>
+
+    <!-- ── Comparación de destinos en paralelo ──── -->
+    <div id="canvas-compare-view" class="view-content">
+      <div class="compare-wrap">
+
+        <div class="compare-header">
+          <h2>⚖ Comparación de Destinos Estelares</h2>
+          <p>Tres estrellas de distinta masa evolucionando en paralelo, en tiempo real e independientes entre sí.</p>
+          <button id="btnCompareSync" class="compare-sync-btn" onclick="syncCompareStars()">🔄 Sincronizar (reiniciar las 3 a la vez)</button>
+        </div>
+
+        <div class="compare-columns" id="compareColumns">
+          <!-- Generado dinámicamente por JS: 1 columna por estrella -->
+        </div>
+
+        <div class="compare-hr-section">
+          <div class="compare-hr-title">◐ Diagrama H-R — trayectorias en paralelo</div>
+          <canvas id="compareHRCanvas" width="640" height="300"></canvas>
+        </div>
+
+      </div>
     </div>
 
     <!-- ── Guía Educativa ─────────────────────── -->
@@ -668,6 +691,42 @@
 
   </div><!-- /sidebar -->
 </div><!-- /main -->
+
+<!-- ── Panel deslizante: Explicación de Fase ── -->
+<div id="phaseDrawerOverlay" class="phase-drawer-overlay"></div>
+<aside id="phaseDrawer" class="phase-drawer" aria-hidden="true">
+  <button id="phaseDrawerClose" class="phase-drawer-close" aria-label="Cerrar panel">✕</button>
+
+  <div class="phase-drawer-header">
+    <div class="phase-drawer-badge" id="drawerPhaseBadge">Fase</div>
+    <h2 id="drawerTitle">Título de la Fase</h2>
+  </div>
+
+  <section class="drawer-section">
+    <h3>🔭 ¿Qué está pasando físicamente?</h3>
+    <p id="drawerExplanation"></p>
+  </section>
+
+  <section class="drawer-section">
+    <h3>📊 Diagrama ilustrativo</h3>
+    <div id="drawerDiagram" class="drawer-diagram"></div>
+  </section>
+
+  <section class="drawer-section">
+    <h3>∫ Ecuaciones activas, término a término</h3>
+    <div id="drawerEquations" class="drawer-equations"></div>
+  </section>
+
+  <section class="drawer-section">
+    <h3>🔢 Valores de referencia reales</h3>
+    <ul id="drawerRealValues" class="drawer-list"></ul>
+  </section>
+
+  <section class="drawer-section">
+    <h3>⭐ Objetos estelares reales comparables</h3>
+    <div id="drawerComparisons" class="drawer-comparisons"></div>
+  </section>
+</aside>
 
 <!-- ── Módulos JS (orden de dependencias) ──── -->
 <script src="js/hipparcos.js"></script>
